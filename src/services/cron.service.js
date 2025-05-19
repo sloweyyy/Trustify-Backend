@@ -25,9 +25,9 @@ const deleteExpiredTokens = async () => {
 
 const startCronJob = () => {
   cron.schedule('0 0 * * *', deleteExpiredTokens);
-  // 1 minute for testing
-  cron.schedule('*/1 * * * *', autoVerifyDocument);
-  cron.schedule('*/1 * * * *', autoVerifySession);
+  // Run every minute
+  cron.schedule('* * * * *', autoVerifyDocument);
+  cron.schedule('* * * * *', autoVerifySession);
 
   // 1 days for testing
   cron.schedule('0 0 * * *', updateAllPayments);

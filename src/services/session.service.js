@@ -943,7 +943,11 @@ const approveSignatureSessionByUser = async (sessionId, userId, signatureImage) 
 
     let uploadedImageUrl = null;
     if (signatureImage) {
-      uploadedImageUrl = await notarizationService.uploadFileToFirebase(signatureImage, 'sessionSignatures', sessionId);
+      uploadedImageUrl = await notarizationService.uploadFileToFirebase(
+        signatureImage,
+        'sessionSignatures',
+        `${sessionId}/${userId}`
+      );
     }
 
     if (isCreator) {
