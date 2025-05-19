@@ -239,7 +239,7 @@ const purchaseDocument = async (userId, itemId, amount) => {
 
     await emailService.sendNFTPaymentEmail(user.email, document.filename, paymentLinkResponse);
 
-    document.amount += amount;
+    document.amount = Number(document.amount) + Number(amount);
 
     await userWallet.save();
   } catch (error) {
