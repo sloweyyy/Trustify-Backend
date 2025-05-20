@@ -309,113 +309,111 @@ components:
           type: string
           format: date-time
           description: Timestamp of the last update
-      UserWallet:
-        type: object
-        properties:
-          user:
-            type: string
-            description: The ID of the user who owns the wallet.
-          nftItems:
-            type: array
-            items:
-              type: object
-              properties:
-                transactionHash:
-                  type: string
-                  description: The unique transaction hash.
-                filename:
-                  type: string
-                  description: The filename associated with the NFT.
-                amount:
-                  type: number
-                  description: The amount of NFTs.
-                tokenId:
-                  type: string
-                  description: The token ID of the NFT.
-                tokenURI:
-                  type: string
-                  description: The URI of the token.
-                contractAddress:
-                  type: string
-                  description: The contract address of the NFT.
-                mintedAt:
-                  type: string
-                  format: date-time
-                  description: The date and time when the NFT was minted.
-        Sessions:
-          type: object
-          properties:
-            user:
-              type: string
-              description: The ID of the user who owns the wallet.
-            sessions:
-              type: array
-              items:
-                type: object
-                properties:
-                  sessionId:
-                    type: string
-                    description: The ID of the session.
-                  notaryField:
-                    type: object
-                    $ref: '#/components/schemas/NotarizationField'
-                  notaryService:
-                    type: object
-                    $ref: '#/components/schemas/NotarizationService'
-                  sessionName:
-                    type: string
-                    description: The name of the session.
-                  startTime:
-                    type: string
-                    description: The start time of the session.
-                  startDate:
-                    type: string
-                    format: date
-                    description: The start date of the session.
-                  endTime:
-                    type: string
-                    description: The end time of the session.
-                  endDate:
-                    type: string
-                    format: date
-                    description: The end date of the session.
-                  users:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        email:
-                          type: string
-                          description: The email of the user.
-                        status:
-                          type: string
-                          enum:
-                            - pending
-                            - accepted
-                            - rejected
-                          description: The status of the user.
-                  createdBy:
-                    type: string
-                    description: The ID of the user who created the session.
-                  createdAt:
-                    type: string
-                    format: date-time
-                    description: The date and time when the session was created.
-          createdAt:
-            type: string
-            format: date-time
-            description: The date and time when the wallet was created.
-        example:
-          user: 5ebac534954b54139806c112
-          nftItems:
-            - transactionHash: '0x1234567890abcdef'
-              filename: 'nft_image.png'
-              amount: 1
-              tokenId: '1'
-              tokenURI: 'https://example.com/nft/1'
-              contractAddress: '0xabcdef1234567890'
-              mintedAt: '2023-10-01T12:00:00Z'
-          createdAt: '2023-10-01T12:00:00Z'
+    UserWallet:
+      type: object
+      properties:
+        user:
+          type: string
+          description: The ID of the user who owns the wallet.
+        nftItems:
+          type: array
+          items:
+            type: object
+            properties:
+              transactionHash:
+                type: string
+                description: The unique transaction hash.
+              filename:
+                type: string
+                description: The filename associated with the NFT.
+              amount:
+                type: number
+                description: The amount of NFTs.
+              tokenId:
+                type: string
+                description: The token ID of the NFT.
+              tokenURI:
+                type: string
+                description: The URI of the token.
+              contractAddress:
+                type: string
+                description: The contract address of the NFT.
+              mintedAt:
+                type: string
+                format: date-time
+                description: The date and time when the NFT was minted.
+        createdAt:
+          type: string
+          format: date-time
+          description: The date and time when the wallet was created.
+      example:
+        user: 5ebac534954b54139806c112
+        nftItems:
+          - transactionHash: '0x1234567890abcdef'
+            filename: 'nft_image.png'
+            amount: 1
+            tokenId: '1'
+            tokenURI: 'https://example.com/nft/1'
+            contractAddress: '0xabcdef1234567890'
+            mintedAt: '2023-10-01T12:00:00Z'
+        createdAt: '2023-10-01T12:00:00Z'
+    Sessions:
+      type: object
+      properties:
+        user:
+          type: string
+          description: The ID of the user who owns the wallet.
+        sessions:
+          type: array
+          items:
+            type: object
+            properties:
+              sessionId:
+                type: string
+                description: The ID of the session.
+              notaryField:
+                $ref: '#/components/schemas/NotarizationField'
+              notaryService:
+                $ref: '#/components/schemas/NotarizationService'
+              sessionName:
+                type: string
+                description: The name of the session.
+              startTime:
+                type: string
+                description: The start time of the session.
+              startDate:
+                type: string
+                format: date
+                description: The start date of the session.
+              endTime:
+                type: string
+                description: The end time of the session.
+              endDate:
+                type: string
+                format: date
+                description: The end date of the session.
+              users:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      description: The email of the user.
+                    status:
+                      type: string
+                      enum:
+                        - pending
+                        - accepted
+                        - rejected
+                      description: The status of the user.
+              createdBy:
+                type: string
+                description: The ID of the user who created the session.
+              createdAt:
+                type: string
+                format: date-time
+                description: The date and time when the session was created.
   responses:
     DuplicateEmail:
       description: Email already taken
