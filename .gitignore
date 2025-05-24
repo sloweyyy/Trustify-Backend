@@ -13,3 +13,6 @@ coverage
 /.vscode
 .cursorignore
 create-users.js
+env.local
+
+DS_Store

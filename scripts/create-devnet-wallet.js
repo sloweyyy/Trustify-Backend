@@ -30,7 +30,7 @@ async function createDevnetWallet() {
 
     // Request airdrop
     console.log('Requesting airdrop of 2 SOL from devnet...');
-    const signature = await connection.requestAirdrop(keypair.publicKey, 2 * LAMPORTS_PER_SOL);
+    const signature = await connection.requestAirdrop(keypair.publicKey, 5 * LAMPORTS_PER_SOL);
     await connection.confirmTransaction(signature);
 
     // Check balance
