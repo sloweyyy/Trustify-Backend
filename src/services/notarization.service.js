@@ -664,8 +664,8 @@ const approveSignatureByNotary = async (documentId, userId) => {
       orderCode: generateOrderCode(),
       amount: document.notarizationService.price * document.amount,
       description: `${document._id}`,
-      returnUrl: `${process.env.SERVER_URL}/success.html`,
-      cancelUrl: `${process.env.SERVER_URL}/cancel.html`,
+      returnUrl: `${process.env.CLIENT_URL}/payment/redirect`,
+      cancelUrl: `${process.env.CLIENT_URL}/payment/redirect`,
       userId: document.userId,
       documentId,
       serviceId: document.notarizationService.id,
@@ -720,7 +720,7 @@ const approveSignatureByNotary = async (documentId, userId) => {
     await requestSignature.save();
 
     return {
-      message: 'Notary approved and minted NFTs successfully',
+      message: 'Notary approved and signed the document successfully',
       documentId,
     };
   } catch (error) {

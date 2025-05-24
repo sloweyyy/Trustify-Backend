@@ -2,7 +2,8 @@ const httpStatus = require('http-status');
 const { Payment } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { payOS } = require('../config/payos');
-const { mintNFTs } = require('./notarization.service');
+const { mintNFTs: mintDocumentNFTs } = require('./notarization.service');
+const { mintNFTs: mintSessionNFTs } = require('./session.service');
 require('dotenv').config();
 
 // Define the maximum allowable value for the orderCode and reduce the range to avoid edge cases.
@@ -85,7 +86,11 @@ const handlePaymentCallback = async (orderCode, status) => {
       payment.status = 'success';
       payment.updatedAt = new Date();
       await payment.save();
-      await mintNFTs(payment.orderCode);
+      if (payment.documentId) {
+        await mintDocumentNFTs(payment.orderCode);
+      } else if (payment.sessionId) {
+        await mintSessionNFTs(payment.orderCode);
+      }
     } else if (status === 'CANCELLED') {
       payment.status = 'cancelled';
       payment.updatedAt = new Date();

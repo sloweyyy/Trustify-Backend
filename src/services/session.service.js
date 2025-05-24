@@ -1045,6 +1045,98 @@ const approveSignatureSessionByNotary = async (sessionId, userId) => {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Session has already been paid');
     }
 
+    const payment = new Payment({
+      orderCode: generateOrderCode(),
+      amount: session.notaryService.price * session.amount * (session.users.length + 1),
+      description: `Session: ${sessionId.toString().slice(-15)}`,
+      returnUrl: `${process.env.CLIENT_URL}/payment/redirect`,
+      cancelUrl: `${process.env.CLIENT_URL}/payment/redirect`,
+      userId: session.createdBy,
+      sessionId,
+      serviceId: session.notaryService.id,
+      fieldId: session.notaryField.id,
+    });
+
+    await payment.save();
+
+    const paymentLinkResponse = await payOS.createPaymentLink({
+      orderCode: payment.orderCode,
+      amount: payment.amount,
+      description: payment.description,
+      returnUrl: payment.returnUrl,
+      cancelUrl: payment.cancelUrl,
+    });
+
+    payment.checkoutUrl = paymentLinkResponse.checkoutUrl;
+    await payment.save();
+
+    await SessionStatusTracking.updateOne(
+      { sessionId },
+      {
+        status: 'completed',
+        updatedAt: new Date(),
+      }
+    );
+
+    const approveSessionHistory = new ApproveSessionHistory({
+      userId,
+      sessionId,
+      beforeStatus: 'digitalSignature',
+      afterStatus: 'completed',
+    });
+
+    requestSessionSignature.approvalStatus.notary = {
+      approved: true,
+      approvedAt: new Date(),
+    };
+
+    await requestSessionSignature.save();
+
+    await approveSessionHistory.save();
+
+    // send payment link to creator
+    const user = await userService.getUserById(session.createdBy);
+    await emailService.sendPaymentEmail(user.email, sessionId, paymentLinkResponse);
+
+    // Send email to all users in session
+    const sessionUserEmails = session.users.map((sessionUser) => sessionUser.email);
+    const allEmails = [...new Set([...sessionUserEmails, user.email])];
+
+    await emailService.sendSessionStatusUpdateEmail(
+      allEmails,
+      sessionId,
+      'digitalSignature',
+      'completed',
+      'Session has been completed successfully'
+    );
+
+    return {
+      message: 'Notary approved and signed the session successfully',
+      sessionId,
+    };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    console.error('Error approve signature by notary:', error.message);
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to approve signature by notary');
+  }
+};
+
+const mintNFTs = async (orderCode) => {
+  try {
+    const payment = await Payment.findOne({ orderCode });
+    if (!payment) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Payment not found');
+    }
+    if (payment.status !== 'success') {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Payment is not successful');
+    }
+
+    const session = await Session.findById(payment.sessionId);
+    if (!session) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Session not found');
+    }
     if (session.output && Array.isArray(session.output) && session.output.length > 0) {
       for (const outputFile of session.output) {
         // Download file from storage
@@ -1118,82 +1210,12 @@ const approveSignatureSessionByNotary = async (sessionId, userId) => {
       // Save updated document
       await session.save();
     }
-
-    const payment = new Payment({
-      orderCode: generateOrderCode(),
-      amount: session.notaryService.price * session.amount * (session.users.length + 1),
-      description: `Session: ${sessionId.toString().slice(-15)}`,
-      returnUrl: `${process.env.SERVER_URL}/success.html`,
-      cancelUrl: `${process.env.SERVER_URL}/cancel.html`,
-      userId: session.createdBy,
-      sessionId,
-      serviceId: session.notaryService.id,
-      fieldId: session.notaryField.id,
-    });
-
-    await payment.save();
-
-    const paymentLinkResponse = await payOS.createPaymentLink({
-      orderCode: payment.orderCode,
-      amount: payment.amount,
-      description: payment.description,
-      returnUrl: payment.returnUrl,
-      cancelUrl: payment.cancelUrl,
-    });
-
-    payment.checkoutUrl = paymentLinkResponse.checkoutUrl;
-    await payment.save();
-
-    await SessionStatusTracking.updateOne(
-      { sessionId },
-      {
-        status: 'completed',
-        updatedAt: new Date(),
-      }
-    );
-
-    const approveSessionHistory = new ApproveSessionHistory({
-      userId,
-      sessionId,
-      beforeStatus: 'digitalSignature',
-      afterStatus: 'completed',
-    });
-
-    requestSessionSignature.approvalStatus.notary = {
-      approved: true,
-      approvedAt: new Date(),
-    };
-
-    await requestSessionSignature.save();
-
-    await approveSessionHistory.save();
-
-    // send payment link to creator
-    const user = await userService.getUserById(session.createdBy);
-    await emailService.sendPaymentEmail(user.email, sessionId, paymentLinkResponse);
-
-    // Send email to all users in session
-    const sessionUserEmails = session.users.map((sessionUser) => sessionUser.email);
-    const allEmails = [...new Set([...sessionUserEmails, user.email])];
-
-    await emailService.sendSessionStatusUpdateEmail(
-      allEmails,
-      sessionId,
-      'digitalSignature',
-      'completed',
-      'Session has been completed successfully'
-    );
-
-    return {
-      message: 'Notary approved and signed the session successfully',
-      sessionId,
-    };
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;
     }
-    console.error('Error approve signature by notary:', error.message);
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to approve signature by notary');
+    console.error('Error minting NFTs:', error.message);
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to mint NFTs');
   }
 };
 
@@ -1380,4 +1402,5 @@ module.exports = {
   approveSignatureSessionByNotary,
   autoVerifySession,
   deleteFile,
+  mintNFTs,
 };
