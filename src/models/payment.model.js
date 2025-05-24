@@ -46,6 +46,10 @@ const paymentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Document',
   },
+  sessionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Session',
+  },
   serviceId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'NotarizationService',
