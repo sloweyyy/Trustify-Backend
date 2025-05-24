@@ -78,8 +78,8 @@ const handlePaymentCallback = async (orderCode, status) => {
       throw new ApiError(httpStatus.NOT_FOUND, 'Payment not found');
     }
     const paymentStatusResponse = await payOS.getPaymentLinkInformation(payment.orderCode);
-    if (paymentStatusResponse.status !== 'PENDING') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Payment is not pending');
+    if (paymentStatusResponse.status === 'PENDING') {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Payment is not completed');
     }
 
     if (status === 'PAID') {
