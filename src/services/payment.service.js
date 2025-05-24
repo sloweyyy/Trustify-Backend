@@ -2,6 +2,7 @@ const httpStatus = require('http-status');
 const { Payment } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { payOS } = require('../config/payos');
+const { mintNFTs } = require('./notarization.service');
 require('dotenv').config();
 
 // Define the maximum allowable value for the orderCode and reduce the range to avoid edge cases.
@@ -69,7 +70,7 @@ const getPaymentById = async (paymentId) => {
   }
 };
 
-const updatePaymentStatus = async (orderCode, status) => {
+const handlePaymentCallback = async (orderCode, status) => {
   try {
     const payment = await Payment.findOne({ orderCode });
     if (!payment) {
@@ -82,11 +83,14 @@ const updatePaymentStatus = async (orderCode, status) => {
 
     if (status === 'PAID') {
       payment.status = 'success';
+      payment.updatedAt = new Date();
+      await payment.save();
+      await mintNFTs(payment.orderCode);
     } else if (status === 'CANCELLED') {
       payment.status = 'cancelled';
+      payment.updatedAt = new Date();
+      await payment.save();
     }
-    payment.updatedAt = new Date();
-    await payment.save();
     return payment;
   } catch (error) {
     if (error instanceof ApiError) {
@@ -176,7 +180,7 @@ const updateAllPayments = async () => {
 module.exports = {
   createPayment,
   getPaymentById,
-  updatePaymentStatus,
+  handlePaymentCallback,
   getPaymentStatus,
   updateAllPayments,
 };
