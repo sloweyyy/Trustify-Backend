@@ -128,6 +128,7 @@ const createDocument = async (documentBody, files, fileIds, customFileNames, use
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Failed to create document: ${error.message}`);
   }
 };
+
 const createStatusTracking = async (documentId, status) => {
   try {
     const statusTracking = new StatusTracking({

@@ -13,7 +13,7 @@ const getPayment = catchAsync(async (req, res) => {
 });
 
 const updatePaymentStatus = catchAsync(async (req, res) => {
-  const payment = await paymentService.updatePaymentStatus(req.params.paymentId, req.body.status);
+  const payment = await paymentService.updatePaymentStatus(req.params.orderCode, req.body.status);
   res.send(payment);
 });
 
