@@ -12,9 +12,9 @@ const router = express.Router();
 
 router.post('/create-payment', paymentController.createPayment);
 router.get('/get-payment/:paymentId', paymentController.getPayment);
-router.put('/update-payment-status/:paymentId', paymentController.updatePaymentStatus);
+router.put('/handle-payment-callback/:orderCode', paymentController.handlePaymentCallback);
 router.get('/get-payment-status/:paymentId', paymentController.getPaymentStatus);
-router.get('/update-all-payments', paymentController.updateAllPayments);
+// router.get('/update-all-payments', paymentController.updateAllPayments);
 
 module.exports = router;
 
@@ -102,18 +102,18 @@ module.exports = router;
 
 /**
  * @swagger
- * /payments/update-payment-status/{paymentId}:
+ * /payments/handle-payment-callback/{orderCode}:
  *   put:
- *     summary: Update the status of a payment
- *     description: Update the status of a payment by its ID.
+ *     summary: Handle the payment callback
+ *     description: Handle the payment callback by its orderCode.
  *     tags: [Payments]
  *     parameters:
  *       - in: path
- *         name: paymentId
+ *         name: orderCode
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the payment to update
+ *         description: The orderCode of the payment to update
  *     requestBody:
  *       required: true
  *       content:
@@ -126,9 +126,9 @@ module.exports = router;
  *               status:
  *                 type: string
  *                 description: The new status of the payment
- *                 enum: [pending, success, failed, cancelled]
+ *                 enum: [PAID, CANCELLED]
  *             example:
- *               status: "success"
+ *               status: "PAID"
  *     responses:
  *       200:
  *         description: Payment status updated successfully

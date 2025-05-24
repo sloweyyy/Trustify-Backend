@@ -2,11 +2,14 @@ const httpStatus = require('http-status');
 const { Payment } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { payOS } = require('../config/payos');
+const { mintNFTs } = require('./notarization.service');
 require('dotenv').config();
 
 // Define the maximum allowable value for the orderCode and reduce the range to avoid edge cases.
 const MAX_SAFE_INTEGER = 9007199254740991;
 const MAX_ORDER_CODE = Math.floor(MAX_SAFE_INTEGER / 10); // Reduced range
+const clientReturnUrl = `${process.env.CLIENT_URL}/payment/redirect`;
+const clientCancelUrl = `${process.env.CLIENT_URL}/payment/redirect`;
 
 const generateOrderCode = () => {
   // Generate a number less than MAX_ORDER_CODE
@@ -15,8 +18,8 @@ const generateOrderCode = () => {
 
 const createPayment = async (paymentData) => {
   try {
-    const { amount, description, returnUrl, cancelUrl, userId } = paymentData;
-    if (!amount || !description || !returnUrl || !cancelUrl || !userId) {
+    const { amount, description, userId } = paymentData;
+    if (!amount || !description || !userId) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Missing required fields');
     }
 
@@ -25,8 +28,8 @@ const createPayment = async (paymentData) => {
       orderCode: generateOrderCode(), // Ensuring a valid orderCode
       amount,
       description,
-      returnUrl,
-      cancelUrl,
+      returnUrl: clientReturnUrl,
+      cancelUrl: clientCancelUrl,
       userId,
     });
 
@@ -67,11 +70,26 @@ const getPaymentById = async (paymentId) => {
   }
 };
 
-const updatePaymentStatus = async (paymentId, status) => {
+const handlePaymentCallback = async (orderCode, status) => {
   try {
-    const payment = await Payment.findByIdAndUpdate(paymentId, { status, updatedAt: new Date() }, { new: true });
+    const payment = await Payment.findOne({ orderCode });
     if (!payment) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Payment not found');
+    }
+    const paymentStatusResponse = await payOS.getPaymentLinkInformation(payment.orderCode);
+    if (paymentStatusResponse.status !== 'PENDING') {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Payment is not pending');
+    }
+
+    if (status === 'PAID') {
+      payment.status = 'success';
+      payment.updatedAt = new Date();
+      await payment.save();
+      await mintNFTs(payment.orderCode);
+    } else if (status === 'CANCELLED') {
+      payment.status = 'cancelled';
+      payment.updatedAt = new Date();
+      await payment.save();
     }
     return payment;
   } catch (error) {
@@ -96,13 +114,14 @@ const getPaymentStatus = async (paymentId) => {
 
     const paymentStatusResponse = await payOS.getPaymentLinkInformation(payment.orderCode);
 
-    if (paymentStatusResponse.status === 'PAID') {
-      await updatePaymentStatus(paymentId, 'success');
-    } else if (paymentStatusResponse.status === 'CANCELLED') {
-      await updatePaymentStatus(paymentId, 'cancelled');
-    } else if (paymentStatusResponse.status === 'FAILED') {
-      await updatePaymentStatus(paymentId, 'failed');
-    }
+    // if (paymentStatusResponse.status === 'PAID') {
+    //   await updatePaymentStatus(paymentId, 'success');
+    // } else if (paymentStatusResponse.status === 'CANCELLED') {
+    //   await updatePaymentStatus(paymentId, 'cancelled');
+    // } else if (paymentStatusResponse.status === 'FAILED') {
+    //   await updatePaymentStatus(paymentId, 'failed');
+    // }
+
     return paymentStatusResponse;
   } catch (error) {
     if (error instanceof ApiError) {
@@ -161,7 +180,7 @@ const updateAllPayments = async () => {
 module.exports = {
   createPayment,
   getPaymentById,
-  updatePaymentStatus,
+  handlePaymentCallback,
   getPaymentStatus,
   updateAllPayments,
 };

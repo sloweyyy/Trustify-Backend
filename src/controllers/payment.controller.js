@@ -12,8 +12,8 @@ const getPayment = catchAsync(async (req, res) => {
   res.send(payment);
 });
 
-const updatePaymentStatus = catchAsync(async (req, res) => {
-  const payment = await paymentService.updatePaymentStatus(req.params.paymentId, req.body.status);
+const handlePaymentCallback = catchAsync(async (req, res) => {
+  const payment = await paymentService.handlePaymentCallback(req.params.orderCode, req.body.status);
   res.send(payment);
 });
 
@@ -30,7 +30,7 @@ const updateAllPayments = catchAsync(async (req, res) => {
 module.exports = {
   createPayment,
   getPayment,
-  updatePaymentStatus,
+  handlePaymentCallback,
   getPaymentStatus,
   updateAllPayments,
 };

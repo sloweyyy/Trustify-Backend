@@ -128,6 +128,7 @@ const createDocument = async (documentBody, files, fileIds, customFileNames, use
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Failed to create document: ${error.message}`);
   }
 };
+
 const createStatusTracking = async (documentId, status) => {
   try {
     const statusTracking = new StatusTracking({
@@ -658,74 +659,6 @@ const approveSignatureByNotary = async (documentId, userId) => {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Document has already been paid');
     }
 
-    // Mint NFTs for output files
-    if (document.output && Array.isArray(document.output)) {
-      console.log(`document.output exists and is an array with length: ${document.output.length}`);
-      if (document.output.length > 0) {
-        for (const outputFile of document.output) {
-          if (!outputFile.filename) {
-            throw new ApiError(httpStatus.BAD_REQUEST, 'Output file filename is missing');
-          }
-          // Download file from storage
-          const fileBuffer = await downloadFile(outputFile.firebaseUrl);
-          if (!fileBuffer) {
-            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to download file');
-          }
-          // Upload to IPFS
-          const ipfsUrl = await uploadToIPFS(fileBuffer, outputFile.filename);
-          if (!ipfsUrl) {
-            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to upload to IPFS');
-          }
-
-          // Mint NFT
-          const nftData = await mintDocumentNFT(ipfsUrl);
-          if (!nftData || !nftData.mintAddress) {
-            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to mint NFT');
-          }
-          // Update output file with Solana transaction details
-          outputFile.transactionSignature = nftData.transactionSignature || null;
-          outputFile.mintAddress = nftData.mintAddress || null;
-
-          if (nftData.viewLinks) {
-            outputFile.viewLinks = nftData.viewLinks;
-          } else if (outputFile.mintAddress) {
-            outputFile.viewLinks = getViewLinks(outputFile.mintAddress, ipfsUrl);
-          }
-
-          outputFile.mintedAt = new Date();
-
-          console.log('Adding NFT to wallet with data:', {
-            filename: outputFile.filename,
-            amount: document.amount,
-            tokenId: nftData.mintAddress,
-            tokenURI: ipfsUrl,
-            contractAddress: process.env.PROGRAM_ID,
-            mintAddress: nftData.mintAddress,
-            transactionSignature: nftData.transactionSignature,
-          });
-
-          await userWalletService.addNFTToWallet(document.userId, {
-            filename: outputFile.filename,
-            mintAddress: nftData.mintAddress,
-            metadataAddress: nftData.metadataAddress,
-            metadataUri: ipfsUrl,
-            programId: process.env.PROGRAM_ID,
-            transactionSignature: nftData.transactionSignature,
-            explorerLink: nftData.viewLinks && nftData.viewLinks.explorerLink,
-            solscanLink: nftData.viewLinks && nftData.viewLinks.solscanLink,
-            ipfsLink: nftData.viewLinks && nftData.viewLinks.ipfsLink,
-            amount: document.amount || 1,
-          });
-
-          outputFile.metadataUri = ipfsUrl;
-        }
-
-        await document.save();
-      }
-    } else {
-      console.warn('document.output is undefined or not an array');
-    }
-
     // Create payment
     const payment = new Payment({
       orderCode: generateOrderCode(),
@@ -796,6 +729,90 @@ const approveSignatureByNotary = async (documentId, userId) => {
     }
     console.error('Error approving signature by notary:', error.message);
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to approve signature by notary');
+  }
+};
+
+const mintNFTs = async (orderCode) => {
+  try {
+    const payment = await Payment.findOne({ orderCode });
+    if (!payment) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Payment not found');
+    }
+    if (payment.status !== 'success') {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Payment is not successful');
+    }
+
+    const document = await Document.findById(payment.documentId);
+    if (!document) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Document not found');
+    }
+
+    // Mint NFTs for output files
+    if (document.output && Array.isArray(document.output)) {
+      console.log(`document.output exists and is an array with length: ${document.output.length}`);
+      if (document.output.length > 0) {
+        for (const outputFile of document.output) {
+          if (!outputFile.filename) {
+            throw new ApiError(httpStatus.BAD_REQUEST, 'Output file filename is missing');
+          }
+          // Download file from storage
+          const fileBuffer = await downloadFile(outputFile.firebaseUrl);
+          if (!fileBuffer) {
+            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to download file');
+          }
+          // Upload to IPFS
+          const ipfsUrl = await uploadToIPFS(fileBuffer, outputFile.filename);
+          if (!ipfsUrl) {
+            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to upload to IPFS');
+          }
+          // Mint NFT
+          const nftData = await mintDocumentNFT(ipfsUrl);
+          if (!nftData || !nftData.mintAddress) {
+            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to mint NFT');
+          }
+          // Update output file with Solana transaction details
+          outputFile.transactionSignature = nftData.transactionSignature || null;
+          outputFile.mintAddress = nftData.mintAddress || null;
+          if (nftData.viewLinks) {
+            outputFile.viewLinks = nftData.viewLinks;
+          } else if (outputFile.mintAddress) {
+            outputFile.viewLinks = getViewLinks(outputFile.mintAddress, ipfsUrl);
+          }
+          outputFile.mintedAt = new Date();
+          console.log('Adding NFT to wallet with data:', {
+            filename: outputFile.filename,
+            amount: document.amount,
+            tokenId: nftData.mintAddress,
+            tokenURI: ipfsUrl,
+            contractAddress: process.env.PROGRAM_ID,
+            mintAddress: nftData.mintAddress,
+            transactionSignature: nftData.transactionSignature,
+          });
+          await userWalletService.addNFTToWallet(document.userId, {
+            filename: outputFile.filename,
+            mintAddress: nftData.mintAddress,
+            metadataAddress: nftData.metadataAddress,
+            metadataUri: ipfsUrl,
+            programId: process.env.PROGRAM_ID,
+            transactionSignature: nftData.transactionSignature,
+            explorerLink: nftData.viewLinks && nftData.viewLinks.explorerLink,
+            solscanLink: nftData.viewLinks && nftData.viewLinks.solscanLink,
+            ipfsLink: nftData.viewLinks && nftData.viewLinks.ipfsLink,
+            amount: document.amount || 1,
+          });
+          outputFile.metadataUri = ipfsUrl;
+        }
+        await document.save();
+      }
+    } else {
+      console.warn('document.output is undefined or not an array');
+    }
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    console.error('Error minting NFTs:', error.message);
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to mint NFTs');
   }
 };
 
@@ -985,4 +1002,5 @@ module.exports = {
   getHistoryWithStatus,
   autoVerifyDocument,
   getDocumentById,
+  mintNFTs,
 };
