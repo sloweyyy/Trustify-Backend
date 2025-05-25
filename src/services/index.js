@@ -13,10 +13,4 @@ module.exports.paymentService = require('./payment.service');
 module.exports.cronService = require('./cron.service');
 module.exports.notaryService = require('./notary.service');
 module.exports.userWalletService = require('./userWallet.service');
-const privateIpfsService = require('./private-ipfs.service');
-
-module.exports = {
-  // ... existing code ...
-  privateIpfsService,
-  // ... existing code ...
-};
+module.exports.privateIpfsService = require('./private-ipfs.service');
