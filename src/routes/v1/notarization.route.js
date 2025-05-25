@@ -13,14 +13,23 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // Limit file size to 5MB
   fileFilter: (req, file, cb) => {
-    const allowedFileTypes = /jpeg|jpg|png|pdf/;
-    const mimeType = allowedFileTypes.test(file.mimetype);
-    const extname = allowedFileTypes.test(file.originalname.split('.').pop());
+    const allowedFileTypes = /jpeg|jpg|png|pdf|doc|docx/;
+    // Check both mimetype and extension - MS Office files often have different mimetypes
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/png',
+      'application/pdf',
+      'application/msword', // .doc
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+    ];
 
-    if (mimeType && extname) {
+    const extname = allowedFileTypes.test(file.originalname.toLowerCase().split('.').pop());
+    const mimeTypeAllowed = allowedMimeTypes.includes(file.mimetype);
+
+    if (mimeTypeAllowed || extname) {
       return cb(null, true);
     }
-    cb(new ApiError(httpStatus.BAD_REQUEST, 'Only images and PDFs are allowed'));
+    cb(new ApiError(httpStatus.BAD_REQUEST, 'Only images, PDFs, and Word documents (doc, docx) are allowed'));
   },
 });
 
@@ -375,6 +384,7 @@ router
  *                   type: string
  *                   format: binary
  *                 description: Output files to be uploaded
+ *                 example: [file.pdf, image.png, document.doc, document.docx]
  *     responses:
  *       "200":
  *         description: Successfully updated the document status
