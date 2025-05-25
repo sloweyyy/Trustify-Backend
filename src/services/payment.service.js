@@ -82,6 +82,10 @@ const handlePaymentCallback = async (orderCode, status) => {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Payment is not completed');
     }
 
+    if (payment.status !== 'pending') {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Payment is completed or cancelled');
+    }
+
     if (status === 'PAID') {
       payment.status = 'success';
       payment.updatedAt = new Date();

@@ -245,6 +245,54 @@ const getTransactionData = async (signature) => {
   }
 };
 
+const getMetadataByMint = async (mintAddress) => {
+  try {
+    if (!mintAddress) {
+      throw new Error('Mint address is required');
+    }
+
+    console.log(`Fetching metadata for mint address: ${mintAddress}`);
+
+    const asset = await fetchDigitalAsset(umi, mintAddress);
+
+    const metadataUri = asset.metadata.uri;
+
+    let metadataContent = null;
+    if (metadataUri) {
+      try {
+        const response = await fetch(metadataUri);
+        if (response.ok) {
+          metadataContent = await response.json();
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch metadata content from ${metadataUri}:`, error);
+      }
+    }
+
+    const viewLinks = getViewLinks(mintAddress, metadataUri);
+
+    return {
+      mintAddress,
+      onChainMetadata: {
+        name: asset.metadata.name,
+        symbol: asset.metadata.symbol,
+        uri: asset.metadata.uri,
+        sellerFeeBasisPoints: asset.metadata.sellerFeeBasisPoints,
+        creators: asset.metadata.creators,
+        collection: asset.metadata.collection,
+        uses: asset.metadata.uses,
+      },
+      offChainMetadata: metadataContent,
+      viewLinks,
+      updateAuthority: asset.authority,
+      isMutable: asset.metadata.isMutable,
+    };
+  } catch (error) {
+    console.error('Error fetching NFT metadata:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   connection,
   wallet,
@@ -255,4 +303,5 @@ module.exports = {
   pinata,
   getViewLinks,
   extractIPFSCid,
+  getMetadataByMint,
 };
