@@ -1,8 +1,7 @@
 const { LitNodeClient } = require('@lit-protocol/lit-node-client');
-const { LIT_ERROR_KIND, LOG_LEVEL, LIT_NETWORK } = require('@lit-protocol/constants');
+const { LIT_NETWORK } = require('@lit-protocol/constants');
 const { Keypair } = require('@solana/web3.js');
 const tweetnacl = require('tweetnacl');
-const { checkAndSignAuthMessage } = require('@lit-protocol/auth-helpers');
 
 // Create a client connecting to the Lit Network
 const litNodeClient = new LitNodeClient({
@@ -21,9 +20,13 @@ async function ensureLitConnected() {
     isConnected = true;
   }
 }
+
+/**
+ * Get Unified Access Control Conditions for Solana wallet address
+ * This controls who can decrypt the file
+ */
 function getUnifiedAccessControlConditions() {
   const walletAddress = process.env.AUTHORIZED_WALLET_ADDRESS;
-  const programId = process.env.PROGRAM_ID;
 
   return [
     {
@@ -31,14 +34,14 @@ function getUnifiedAccessControlConditions() {
       method: 'getBalance',
       params: [walletAddress],
       chain: 'solana',
-      pdaParams: [], // <-- required
+      pdaParams: [], // required
       pdaInterface: {
-        offset: 0, // <-- required
-        fields: {}, // <-- required (empty object is fine)
+        offset: 0, // required
+        fields: {}, // required (empty object is fine)
       },
-      pdaKey: walletAddress, // <-- must be here
+      pdaKey: walletAddress, // must be here
       returnValueTest: {
-        key: '', // <-- required (empty string works)
+        key: '', // required (empty string works)
         comparator: '>=',
         value: '0',
       },
@@ -60,11 +63,14 @@ async function generateAuthSig() {
   const secretKey = Buffer.from(process.env.WALLET_PRIVATE_KEY, 'base64');
   const keypair = Keypair.fromSecretKey(secretKey);
 
-  // Sign the message with the wallet using nacl
-  const signature = tweetnacl.sign.detached(messageBytes, keypair.secretKey);
+  // Sign the message using tweetnacl with the keypair's secret key
+  const signatureBytes = tweetnacl.sign.detached(messageBytes, keypair.secretKey);
+
+  // Convert signature to base64
+  const signatureBase64 = Buffer.from(signatureBytes).toString('base64');
 
   return {
-    sig: Buffer.from(signature).toString('base64'),
+    sig: signatureBase64,
     derivedVia: 'solana.signMessage',
     signedMessage: message,
     address: walletAddress,
@@ -79,7 +85,7 @@ async function generateAuthSig() {
 async function encryptFileWithLit(fileBuffer) {
   await ensureLitConnected();
   const accessControlConditions = getUnifiedAccessControlConditions();
-  const authSig = await checkAndSignAuthMessage({ chain: 'solana' });
+  const authSig = await generateAuthSig();
 
   try {
     const { ciphertext, dataToEncryptHash } = await litNodeClient.encrypt({
