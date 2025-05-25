@@ -19,6 +19,7 @@ const { payOS } = require('../config/payos');
 const { bucket, downloadFile } = require('../config/firebase');
 const { uploadToIPFS, mintDocumentNFT, getTransactionData } = require('../config/blockchain');
 const userWalletService = require('./userWallet.service');
+const { privateIpfsService } = require('./index');
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -1141,11 +1142,13 @@ const mintNFTs = async (orderCode) => {
       for (const outputFile of session.output) {
         // Download file from storage
         const fileBuffer = await downloadFile(outputFile.firebaseUrl);
-        // Upload to Arweave via uploadToIPFS function (which now uses Arweave)
-        const metadataUrl = await uploadToIPFS(fileBuffer, outputFile.filename);
-
+        // Upload to private IPFS
+        const ipfsResult = await privateIpfsService.uploadFileToPrivateIPFS(fileBuffer, outputFile.filename);
+        if (!ipfsResult || !ipfsResult.metadataUri) {
+          throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to upload to private IPFS');
+        }
         // Mint NFT
-        const nftData = await mintDocumentNFT(metadataUrl);
+        const nftData = await mintDocumentNFT(ipfsResult.metadataUri);
         if (!nftData || (!nftData.transactionHash && !nftData.transactionSignature)) {
           throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to mint NFT');
         }
@@ -1171,7 +1174,7 @@ const mintNFTs = async (orderCode) => {
         }
 
         // Store metadata URI
-        outputFile.metadataUri = metadataUrl;
+        outputFile.metadataUri = ipfsResult.metadataUri;
 
         // Set minted timestamp
         outputFile.mintedAt = new Date();
@@ -1182,7 +1185,7 @@ const mintNFTs = async (orderCode) => {
             filename: outputFile.filename,
             mintAddress: nftData.mintAddress,
             metadataAddress: nftData.metadataAddress,
-            metadataUri: metadataUrl,
+            metadataUri: ipfsResult.metadataUri,
             programId: process.env.PROGRAM_ID,
             transactionSignature: nftData.transactionSignature,
             explorerLink: nftData.viewLinks && nftData.viewLinks.explorerLink,
@@ -1198,10 +1201,10 @@ const mintNFTs = async (orderCode) => {
           filename: outputFile.filename,
           amount: session.amount,
           tokenId: transactionData.tokenId || nftData.mintAddress,
-          tokenURI: transactionData.tokenURI || metadataUrl,
+          tokenURI: transactionData.tokenURI || ipfsResult.metadataUri,
           contractAddress: transactionData.contractAddress || process.env.PROGRAM_ID,
           mintAddress: nftData.mintAddress,
-          metadataUri: metadataUrl, // Add explicit metadataUri field
+          metadataUri: ipfsResult.metadataUri, // Add explicit metadataUri field
           metadataAddress: nftData.metadataAddress,
           transactionSignature: nftData.transactionSignature,
         });

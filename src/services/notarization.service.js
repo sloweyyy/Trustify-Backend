@@ -12,6 +12,7 @@ const { payOS } = require('../config/payos');
 const Payment = require('../models/payment.model');
 const { uploadToIPFS, mintDocumentNFT, getViewLinks } = require('../config/blockchain');
 const userWalletService = require('./userWallet.service');
+const { privateIpfsService } = require('./index');
 
 const generateOrderCode = () => {
   const MAX_SAFE_INTEGER = 9007199254740991;
@@ -760,13 +761,13 @@ const mintNFTs = async (orderCode) => {
           if (!fileBuffer) {
             throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to download file');
           }
-          // Upload to IPFS
-          const ipfsUrl = await uploadToIPFS(fileBuffer, outputFile.filename);
-          if (!ipfsUrl) {
-            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to upload to IPFS');
+          // Upload to private IPFS
+          const ipfsResult = await privateIpfsService.uploadFileToPrivateIPFS(fileBuffer, outputFile.filename);
+          if (!ipfsResult || !ipfsResult.metadataUri) {
+            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to upload to private IPFS');
           }
           // Mint NFT
-          const nftData = await mintDocumentNFT(ipfsUrl);
+          const nftData = await mintDocumentNFT(ipfsResult.metadataUri);
           if (!nftData || !nftData.mintAddress) {
             throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to mint NFT');
           }
@@ -776,14 +777,14 @@ const mintNFTs = async (orderCode) => {
           if (nftData.viewLinks) {
             outputFile.viewLinks = nftData.viewLinks;
           } else if (outputFile.mintAddress) {
-            outputFile.viewLinks = getViewLinks(outputFile.mintAddress, ipfsUrl);
+            outputFile.viewLinks = getViewLinks(outputFile.mintAddress, ipfsResult.metadataUri);
           }
           outputFile.mintedAt = new Date();
           console.log('Adding NFT to wallet with data:', {
             filename: outputFile.filename,
             amount: document.amount,
             tokenId: nftData.mintAddress,
-            tokenURI: ipfsUrl,
+            tokenURI: ipfsResult.metadataUri,
             contractAddress: process.env.PROGRAM_ID,
             mintAddress: nftData.mintAddress,
             transactionSignature: nftData.transactionSignature,
@@ -792,7 +793,7 @@ const mintNFTs = async (orderCode) => {
             filename: outputFile.filename,
             mintAddress: nftData.mintAddress,
             metadataAddress: nftData.metadataAddress,
-            metadataUri: ipfsUrl,
+            metadataUri: ipfsResult.metadataUri,
             programId: process.env.PROGRAM_ID,
             transactionSignature: nftData.transactionSignature,
             explorerLink: nftData.viewLinks && nftData.viewLinks.explorerLink,
@@ -800,7 +801,7 @@ const mintNFTs = async (orderCode) => {
             ipfsLink: nftData.viewLinks && nftData.viewLinks.ipfsLink,
             amount: document.amount || 1,
           });
-          outputFile.metadataUri = ipfsUrl;
+          outputFile.metadataUri = ipfsResult.metadataUri;
         }
         await document.save();
       }

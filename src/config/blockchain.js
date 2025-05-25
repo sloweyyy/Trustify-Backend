@@ -7,6 +7,7 @@ const { keypairIdentity: umiKeypairIdentity } = require('@metaplex-foundation/um
 const { fromWeb3JsKeypair } = require('@metaplex-foundation/umi-web3js-adapters');
 const { Wallet } = require('@project-serum/anchor');
 const PinataSDK = require('@pinata/sdk');
+const { PinataSDK: NewPinataSDK } = require('pinata');
 const { Readable } = require('stream');
 
 const solanaClusterUrl = process.env.SOLANA_CLUSTER_URL || 'https://api.devnet.solana.com';
@@ -75,6 +76,131 @@ const getViewLinks = (mintAddress, metadataUri) => {
 };
 
 const pinata = new PinataSDK(process.env.PINATA_API_KEY, process.env.PINATA_SECRET_KEY);
+
+// Initialize new Pinata SDK for private IPFS
+const privatePinata = new NewPinataSDK({
+  pinataJwt: process.env.PINATA_JWT,
+  pinataGateway: process.env.PINATA_GATEWAY || 'gateway.pinata.cloud',
+});
+
+// Function to upload file to private IPFS
+const uploadToPrivateIPFS = async (fileBuffer, fileName) => {
+  try {
+    console.log(`Uploading file to Private IPFS: ${fileName}`);
+
+    // Upload file to private IPFS
+    const file = new File([fileBuffer], fileName, { type: 'application/octet-stream' });
+    const fileUpload = await privatePinata.upload.private.file(file, {
+      metadata: {
+        name: fileName,
+        description: `Private document: ${fileName}`,
+      },
+    });
+
+    console.log(`File uploaded to Private IPFS with CID: ${fileUpload.cid}`);
+
+    // Create metadata JSON for the file
+    const metadataJson = {
+      name: fileName,
+      description: `Private Document: ${fileName}`,
+      image: '',
+      properties: {
+        files: [
+          {
+            type: 'application/octet-stream',
+            name: fileName,
+            cid: fileUpload.cid,
+          },
+        ],
+        isPrivate: true,
+      },
+    };
+
+    // Upload metadata to private IPFS
+    const metadataUpload = await privatePinata.upload.private.json(metadataJson, {
+      metadata: {
+        name: `${fileName}-metadata`,
+        description: `Metadata for private document: ${fileName}`,
+      },
+    });
+
+    console.log(`Metadata uploaded to Private IPFS with CID: ${metadataUpload.cid}`);
+
+    return {
+      fileCid: fileUpload.cid,
+      metadataCid: metadataUpload.cid,
+      metadataUri: `https://gateway.pinata.cloud/ipfs/${metadataUpload.cid}`,
+      isPrivate: true,
+    };
+  } catch (error) {
+    console.error('Error uploading to Private IPFS:', error);
+    throw error;
+  }
+};
+
+// Function to create a temporary access link for private files
+const createPrivateAccessLink = async (cid, expiresInSeconds = 3600) => {
+  try {
+    console.log(`Creating access link for private file CID: ${cid}`);
+
+    const accessLink = await privatePinata.gateways.private.createAccessLink({
+      cid,
+      expires: expiresInSeconds,
+    });
+
+    console.log(`Access link created: ${accessLink}`);
+    return accessLink;
+  } catch (error) {
+    console.error('Error creating private access link:', error);
+    throw error;
+  }
+};
+
+// Function to test private IPFS upload with a sample file
+const testPrivateIPFSUpload = async () => {
+  try {
+    console.log('Testing Private IPFS upload...');
+
+    // Create a sample file buffer
+    const sampleContent = JSON.stringify(
+      {
+        message: 'This is a test file for private IPFS',
+        timestamp: new Date().toISOString(),
+        testData: {
+          user: 'test-user',
+          document: 'sample-document.json',
+        },
+      },
+      null,
+      2
+    );
+
+    const fileBuffer = Buffer.from(sampleContent, 'utf8');
+    const fileName = `test-private-${Date.now()}.json`;
+
+    // Upload to private IPFS
+    const uploadResult = await uploadToPrivateIPFS(fileBuffer, fileName);
+
+    // Create access links for both file and metadata
+    const fileAccessLink = await createPrivateAccessLink(uploadResult.fileCid, 10); // 10 seconds
+    const metadataAccessLink = await createPrivateAccessLink(uploadResult.metadataCid, 10);
+
+    console.log('Private IPFS Test Results:');
+    console.log('File CID:', uploadResult.fileCid);
+    console.log('Metadata CID:', uploadResult.metadataCid);
+    console.log('File Access Link:', fileAccessLink);
+    console.log('Metadata Access Link:', metadataAccessLink);
+
+    return {
+      ...uploadResult,
+      fileAccessLink,
+      metadataAccessLink,
+    };
+  } catch (error) {
+    console.error('Error testing private IPFS upload:', error);
+    throw error;
+  }
+};
 
 const uploadToIPFS = async (fileBuffer, fileName) => {
   try {
@@ -304,4 +430,7 @@ module.exports = {
   getViewLinks,
   extractIPFSCid,
   getMetadataByMint,
+  uploadToPrivateIPFS,
+  testPrivateIPFSUpload,
+  createPrivateAccessLink,
 };
