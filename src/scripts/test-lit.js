@@ -10,7 +10,7 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
-const { encryptFileWithLit, decryptFileWithLit } = require('../config/lit-protocol');
+const { encryptFileWithLit, decryptFileWithLit, generateAuthSig } = require('../config/lit-protocol');
 const { uploadToIPFS } = require('../config/blockchain-test');
 
 async function testLitProtocol() {
@@ -30,9 +30,14 @@ async function testLitProtocol() {
     const uint8Array = new Uint8Array(fileBuffer);
     console.log('File read as Uint8Array');
 
+    // Generate a single authSig to use for both encryption and decryption
+    console.log('Generating authentication signature...');
+    const authSig = await generateAuthSig();
+    console.log('Auth signature generated');
+
     // Step 1: Encrypt the file with Lit Protocol using Solana
     console.log('Encrypting file with Lit Protocol using Solana...');
-    const encryptedResult = await encryptFileWithLit(uint8Array);
+    const encryptedResult = await encryptFileWithLit(uint8Array, authSig);
     const { encryptedFile, encryptedSymmetricKey, unifiedAccessControlConditions } = encryptedResult;
 
     // Save encrypted file for testing
@@ -45,9 +50,14 @@ async function testLitProtocol() {
     const metadataUri = await uploadToIPFS(encryptedFile, testFileName, true);
     console.log('Uploaded to IPFS with URI:', metadataUri);
 
-    // Step 3: Decrypt the file
+    // Step 3: Decrypt the file using the same authSig
     console.log('Decrypting file...');
-    const decryptedFile = await decryptFileWithLit(encryptedFile, encryptedSymmetricKey, unifiedAccessControlConditions);
+    const decryptedFile = await decryptFileWithLit(
+      encryptedFile,
+      encryptedSymmetricKey,
+      unifiedAccessControlConditions,
+      authSig
+    );
 
     // Save decrypted file
     const decryptedFilePath = path.join(__dirname, `decrypted-${testFileName}`);
