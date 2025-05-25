@@ -77,12 +77,25 @@ const getViewLinks = (mintAddress, metadataUri) => {
 
 const pinata = new PinataSDK(process.env.PINATA_API_KEY, process.env.PINATA_SECRET_KEY);
 
-const uploadToIPFS = async (fileBuffer, fileName) => {
+const uploadToIPFS = async (fileBuffer, fileName, isAlreadyEncrypted = false) => {
   try {
     console.log(`Uploading file to IPFS: ${fileName}`);
 
-    // Always encrypt with Lit using the app's wallet address
-    const { encryptedFile, encryptedSymmetricKey, accessControlConditions } = await encryptFileWithLit(fileBuffer, 'solana');
+    let encryptedFile, encryptedSymmetricKey, accessControlConditions;
+
+    if (!isAlreadyEncrypted) {
+      // Only encrypt if not already encrypted
+      const encryptionResult = await encryptFileWithLit(fileBuffer, 'solana');
+      encryptedFile = encryptionResult.encryptedFile;
+      encryptedSymmetricKey = encryptionResult.encryptedSymmetricKey;
+      accessControlConditions = encryptionResult.accessControlConditions;
+    } else {
+      // If already encrypted, use the provided buffer directly
+      encryptedFile = fileBuffer;
+      // These values should be provided by the caller if the file is already encrypted
+      encryptedSymmetricKey = fileBuffer.encryptedSymmetricKey;
+      accessControlConditions = fileBuffer.accessControlConditions;
+    }
 
     const metadataJson = {
       name: fileName,

@@ -1,119 +1,136 @@
-const { LitNodeClient, getEncryptionKey } = require('@lit-protocol/lit-node-client');
-const { LIT_NETWORK } = require('@lit-protocol/constants');
-const crypto = require('crypto');
+const { LitNodeClient } = require('@lit-protocol/lit-node-client');
+const { LIT_ERROR_KIND, LOG_LEVEL, LIT_NETWORK } = require('@lit-protocol/constants');
+const { Keypair } = require('@solana/web3.js');
+const tweetnacl = require('tweetnacl');
+const { checkAndSignAuthMessage } = require('@lit-protocol/auth-helpers');
 
+// Create a client connecting to the Lit Network
 const litNodeClient = new LitNodeClient({
-  litNetwork: LIT_NETWORK.DatilDev,
+  litNetwork: LIT_NETWORK.DatilDev, // Use DatilDev for testing
   debug: false,
 });
 
 let isConnected = false;
 
+/**
+ * Ensure the Lit client is connected
+ */
 async function ensureLitConnected() {
   if (!isConnected) {
     await litNodeClient.connect();
     isConnected = true;
   }
 }
-
-function getAccessControlConditions() {
-  const walletAddress = '5XtnVExyUMkC4nRoc1Ru7bvFryv6XdVyr8wfkCEHm3ts';
+function getUnifiedAccessControlConditions() {
+  const walletAddress = process.env.AUTHORIZED_WALLET_ADDRESS;
   const programId = process.env.PROGRAM_ID;
-  if (programId) {
-    // Example: Only allow if the user is the authority of the program (customize as needed)
-    return [
-      {
-        contractAddress: programId,
-        standardContractType: '',
-        chain: 'solana',
-        method: '',
-        parameters: [':userAddress'],
-        returnValueTest: {
-          comparator: '=',
-          value: walletAddress,
-        },
-      },
-    ];
-  }
-  // Default: Only allow the app's wallet address
+
   return [
     {
-      contractAddress: '',
-      standardContractType: '',
+      conditionType: 'solRpc',
+      method: 'getBalance',
+      params: [walletAddress],
       chain: 'solana',
-      method: '',
-      parameters: [':userAddress'],
+      pdaParams: [], // <-- required
+      pdaInterface: {
+        offset: 0, // <-- required
+        fields: {}, // <-- required (empty object is fine)
+      },
+      pdaKey: walletAddress, // <-- must be here
       returnValueTest: {
-        comparator: '=',
-        value: walletAddress,
+        key: '', // <-- required (empty string works)
+        comparator: '>=',
+        value: '0',
       },
     },
   ];
 }
 
-function encryptFile({ file }) {
-  const algorithm = 'aes-256-gcm';
-  const key = crypto.randomBytes(32);
-  const iv = crypto.randomBytes(16);
-
-  const cipher = crypto.createCipheriv(algorithm, key, iv);
-  const encrypted = Buffer.concat([cipher.update(file), cipher.final()]);
-  const tag = cipher.getAuthTag();
-
-  // Store iv and tag with the encrypted file for decryption
-  const encryptedFile = Buffer.concat([iv, tag, encrypted]);
-  return { encryptedFile, symmetricKey: key };
-}
-
 /**
- * Encrypt a file buffer with Lit Protocol and return the encrypted file, encrypted symmetric key, and access control conditions.
- * Uses the app's wallet address as the only allowed decryptor.
+ * Generate a Lit Protocol compatible auth signature for Solana
  */
-async function encryptFileWithLit(fileBuffer, chain = 'solana') {
-  await ensureLitConnected();
-  const accessControlConditions = getAccessControlConditions();
-  // Encrypt the file
-  const { encryptedFile, symmetricKey } = await encryptFile({ file: fileBuffer });
+async function generateAuthSig() {
+  const walletAddress = process.env.AUTHORIZED_WALLET_ADDRESS;
+  const message = `I am creating an account to use Lit Protocol at ${new Date().toISOString()}`;
 
-  // Save the symmetric key with Lit, using access control
-  const encryptedSymmetricKey = await litNodeClient.saveEncryptionKey({
-    accessControlConditions,
-    symmetricKey,
-    chain,
-    litNodeClient,
-  });
+  // Create a message to sign
+  const messageBytes = new TextEncoder().encode(message);
+
+  // Get the wallet keypair from environment
+  const secretKey = Buffer.from(process.env.WALLET_PRIVATE_KEY, 'base64');
+  const keypair = Keypair.fromSecretKey(secretKey);
+
+  // Sign the message with the wallet using nacl
+  const signature = tweetnacl.sign.detached(messageBytes, keypair.secretKey);
 
   return {
-    encryptedFile,
-    encryptedSymmetricKey,
-    accessControlConditions,
+    sig: Buffer.from(signature).toString('base64'),
+    derivedVia: 'solana.signMessage',
+    signedMessage: message,
+    address: walletAddress,
   };
 }
 
 /**
- * Decrypt a file buffer with Lit Protocol using the encrypted symmetric key and access control conditions.
- * @param {Blob|Buffer} encryptedFile - The encrypted file buffer or blob.
- * @param {string} encryptedSymmetricKey - The encrypted symmetric key from Lit.
- * @param {string} chain - The blockchain (e.g., 'solana').
- * @param {Object} authSig - The authentication signature (from the user's wallet).
- * @returns {Promise<Buffer>} - The decrypted file buffer.
+ * Encrypt a file using Lit Protocol with Solana
+ * @param {Buffer} fileBuffer - File to encrypt
+ * @returns {Promise<Object>} Encrypted file, key, and access conditions
  */
-async function decryptFileWithLit(encryptedFile, encryptedSymmetricKey, chain = 'solana', authSig) {
+async function encryptFileWithLit(fileBuffer) {
   await ensureLitConnected();
-  const accessControlConditions = getAccessControlConditions();
-  // Get the symmetric key from Lit
-  const symmetricKey = await getEncryptionKey({
-    accessControlConditions,
-    toDecrypt: encryptedSymmetricKey,
-    chain,
-    authSig,
-    litNodeClient,
-  });
-  return symmetricKey;
+  const accessControlConditions = getUnifiedAccessControlConditions();
+  const authSig = await checkAndSignAuthMessage({ chain: 'solana' });
+
+  try {
+    const { ciphertext, dataToEncryptHash } = await litNodeClient.encrypt({
+      unifiedAccessControlConditions: accessControlConditions,
+      authSig,
+      chain: 'solana',
+      dataToEncrypt: fileBuffer,
+    });
+
+    return {
+      encryptedFile: ciphertext,
+      encryptedSymmetricKey: dataToEncryptHash,
+      unifiedAccessControlConditions: accessControlConditions,
+    };
+  } catch (error) {
+    console.error('Solana encryption failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Decrypt a file using Lit Protocol with Solana
+ * @param {string} encryptedFile - Encrypted file data (ciphertext)
+ * @param {string} encryptedSymmetricKey - Encrypted symmetric key hash
+ * @param {Array} conditions - Unified access control conditions
+ * @returns {Promise<Buffer>} Decrypted file data
+ */
+async function decryptFileWithLit(encryptedFile, encryptedSymmetricKey, conditions) {
+  await ensureLitConnected();
+  const authSig = await generateAuthSig();
+
+  try {
+    const decryptedBuffer = await litNodeClient.decrypt({
+      unifiedAccessControlConditions: conditions,
+      authSig,
+      chain: 'solana',
+      ciphertext: encryptedFile,
+      dataToEncryptHash: encryptedSymmetricKey,
+    });
+
+    return Buffer.isBuffer(decryptedBuffer) ? decryptedBuffer : Buffer.from(decryptedBuffer);
+  } catch (error) {
+    console.error('Solana decryption failed:', error);
+    throw error;
+  }
 }
 
 module.exports = {
   litNodeClient,
   encryptFileWithLit,
   decryptFileWithLit,
+  getUnifiedAccessControlConditions,
+  generateAuthSig,
 };

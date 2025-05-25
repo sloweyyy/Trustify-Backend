@@ -15,6 +15,7 @@ const emailRoute = require('./email.route');
 const notaryRoute = require('./notary.route');
 const userWalletRoute = require('./userWallet.route');
 const nftRoute = require('./nft.route');
+const litRoute = require('./lit.route');
 // const { path } = require('../../app');
 
 const router = express.Router();
@@ -76,6 +77,10 @@ const defaultRoutes = [
   {
     path: '/nft',
     route: nftRoute,
+  },
+  {
+    path: '/lit',
+    route: litRoute,
   },
 ];
 
