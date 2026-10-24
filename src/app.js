@@ -7,6 +7,8 @@ const cors = require('cors');
 const passport = require('passport');
 const httpStatus = require('http-status');
 const path = require('path');
+const mongoose = require('mongoose');
+const { uploadDir, driver: storageDriver } = require('./config/storage');
 const config = require('./config/config');
 const morgan = require('./config/morgan');
 const { jwtStrategy } = require('./config/passport');
@@ -17,8 +19,20 @@ const ApiError = require('./utils/ApiError');
 
 const app = express();
 
+// behind Render/Vercel proxies: use the client IP for rate limiting
+app.set('trust proxy', 1);
+
 // set static folder
 app.use(express.static(path.join(__dirname, 'public')));
+
+// files saved by the local storage driver (see config/storage.js)
+app.use('/uploads', express.static(uploadDir, { fallthrough: false }));
+
+// liveness probe for the hosting platform
+app.get('/health', (req, res) => {
+  const dbUp = mongoose.connection.readyState === 1;
+  res.status(dbUp ? 200 : 503).json({ status: dbUp ? 'ok' : 'degraded', db: dbUp, storage: storageDriver });
+});
 
 if (config.env !== 'test') {
   app.use(morgan.successHandler);
@@ -26,7 +40,7 @@ if (config.env !== 'test') {
 }
 
 // set security HTTP headers
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 // parse json request body
 app.use(express.json());

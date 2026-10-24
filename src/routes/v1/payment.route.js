@@ -1,4 +1,5 @@
 const express = require('express');
+const auth = require('../../middlewares/auth');
 const paymentController = require('../../controllers/payment.controller');
 
 const router = express.Router();
@@ -10,6 +11,7 @@ const router = express.Router();
  *   description: Testing route for payment API
  */
 
+router.get('/my-payments', auth(), paymentController.getMyPayments);
 router.post('/create-payment', paymentController.createPayment);
 router.get('/get-payment/:paymentId', paymentController.getPayment);
 router.put('/handle-payment-callback/:orderCode', paymentController.handlePaymentCallback);
@@ -17,6 +19,28 @@ router.get('/get-payment-status/:paymentId', paymentController.getPaymentStatus)
 // router.get('/update-all-payments', paymentController.updateAllPayments);
 
 module.exports = router;
+
+/**
+ * @swagger
+ * /payments/my-payments:
+ *   get:
+ *     summary: List the current user's payments
+ *     description: Lets the user find and open checkout links (also sent by email).
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, success, failed, cancelled]
+ *     responses:
+ *       "200":
+ *         description: OK
+ *       "401":
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 
 /**
  * @swagger

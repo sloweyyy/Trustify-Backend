@@ -55,6 +55,19 @@ const createPayment = async (paymentData) => {
   }
 };
 
+const PAYMENT_STATUSES = ['pending', 'success', 'failed', 'cancelled'];
+
+const getPaymentsByUser = async (userId, status) => {
+  const filter = { userId };
+  if (status) {
+    if (!PAYMENT_STATUSES.includes(status)) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid payment status');
+    }
+    filter.status = status;
+  }
+  return Payment.find(filter).sort({ createdAt: -1 }).limit(50);
+};
+
 const getPaymentById = async (paymentId) => {
   try {
     const payment = await Payment.findById(paymentId);
@@ -84,6 +97,12 @@ const handlePaymentCallback = async (orderCode, status) => {
 
     if (payment.status !== 'pending') {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Payment is completed or cancelled');
+    }
+
+    // Trust the gateway's status, not the one sent by the browser.
+    const verifiedStatus = paymentStatusResponse.status;
+    if (status === 'PAID' && verifiedStatus !== 'PAID') {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Payment is not completed');
     }
 
     if (status === 'PAID') {
@@ -187,6 +206,7 @@ const updateAllPayments = async () => {
 };
 
 module.exports = {
+  getPaymentsByUser,
   createPayment,
   getPaymentById,
   handlePaymentCallback,

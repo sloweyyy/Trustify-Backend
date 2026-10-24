@@ -38,7 +38,7 @@ const deleteUser = catchAsync(async (req, res) => {
   }
 
   try {
-    const firebaseUser = await auth.getUserByEmail(user.email);
+    const firebaseUser = auth && (await auth.getUserByEmail(user.email));
     if (firebaseUser) {
       await auth.deleteUser(firebaseUser.uid);
     }

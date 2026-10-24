@@ -27,7 +27,9 @@ const jwtVerify = async (payload, done) => {
 
 const jwtStrategy = new JwtStrategy(jwtOptions, jwtVerify);
 
-const googleStrategy = new GoogleStrategy(
+const googleEnabled = Boolean(config.google.clientID && config.google.clientSecret);
+
+const googleStrategy = googleEnabled && new GoogleStrategy(
   {
     clientID: config.google.clientID,
     clientSecret: config.google.clientSecret,
@@ -53,9 +55,10 @@ const googleStrategy = new GoogleStrategy(
 );
 
 passport.use(jwtStrategy);
-passport.use(googleStrategy);
+if (googleStrategy) passport.use(googleStrategy);
 
 module.exports = {
   jwtStrategy,
   googleStrategy,
+  googleEnabled,
 };

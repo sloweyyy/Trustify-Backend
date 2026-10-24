@@ -15,6 +15,9 @@ jest.mock('../../../src/config/payos', () => ({
   },
 }));
 
+jest.mock('../../../src/services/notarization.service', () => ({ mintNFTs: jest.fn() }));
+jest.mock('../../../src/services/session.service', () => ({ mintNFTs: jest.fn() }));
+
 jest.mock('../../../src/utils/ApiError', () => {
   return jest.fn().mockImplementation((statusCode, message) => {
     const error = new Error(message || 'Error');
@@ -29,8 +32,6 @@ describe('Payment Service', () => {
       const paymentData = {
         amount: 100,
         description: 'Test Payment',
-        returnUrl: 'http://localhost:3100/success.html',
-        cancelUrl: 'http://localhost:3100/cancel.html',
         userId: 'userId',
       };
       const mockPayment = {
@@ -78,27 +79,48 @@ describe('Payment Service', () => {
     });
   });
 
-  describe('updatePaymentStatus', () => {
-    it('should update payment status and return the updated payment', async () => {
-      const mockPayment = { _id: 'paymentId', amount: 100, status: 'pending' };
-      Payment.findByIdAndUpdate = jest.fn().mockResolvedValueOnce(mockPayment);
+  describe('handlePaymentCallback', () => {
+    const pendingPayment = () => ({ orderCode: 123, status: 'pending', documentId: 'docId', save: jest.fn() });
 
-      const result = await paymentService.updatePaymentStatus('paymentId', 'success');
+    beforeEach(() => jest.clearAllMocks());
 
-      expect(result).toEqual(mockPayment);
-      expect(Payment.findByIdAndUpdate).toHaveBeenCalledWith(
-        'paymentId',
-        { status: 'success', updatedAt: expect.any(Date) },
-        { new: true }
-      );
+    it('should mark the payment as success when the gateway confirms PAID', async () => {
+      const payment = pendingPayment();
+      Payment.findOne = jest.fn().mockResolvedValueOnce(payment);
+      payOS.getPaymentLinkInformation.mockResolvedValueOnce({ status: 'PAID' });
+
+      const result = await paymentService.handlePaymentCallback(123, 'PAID');
+
+      expect(result.status).toBe('success');
+      expect(payment.save).toHaveBeenCalled();
     });
 
-    it('should throw an error if payment is not found', async () => {
-      Payment.findByIdAndUpdate = jest.fn().mockResolvedValueOnce(null);
+    it('should reject PAID from the client when the gateway says CANCELLED', async () => {
+      const payment = pendingPayment();
+      Payment.findOne = jest.fn().mockResolvedValueOnce(payment);
+      payOS.getPaymentLinkInformation.mockResolvedValueOnce({ status: 'CANCELLED' });
 
-      await expect(paymentService.updatePaymentStatus('paymentId', 'success')).rejects.toThrow(
-        'Failed to update payment status'
-      );
+      await expect(paymentService.handlePaymentCallback(123, 'PAID')).rejects.toThrow();
+      expect(payment.save).not.toHaveBeenCalled();
+    });
+
+    it('should throw if the payment does not exist', async () => {
+      Payment.findOne = jest.fn().mockResolvedValueOnce(null);
+
+      await expect(paymentService.handlePaymentCallback(123, 'PAID')).rejects.toThrow();
+      expect(payOS.getPaymentLinkInformation).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getPaymentsByUser', () => {
+    it('should filter by user and status', async () => {
+      const limit = jest.fn().mockResolvedValueOnce([]);
+      const sort = jest.fn().mockReturnValue({ limit });
+      Payment.find = jest.fn().mockReturnValue({ sort });
+
+      await paymentService.getPaymentsByUser('userId', 'pending');
+
+      expect(Payment.find).toHaveBeenCalledWith({ userId: 'userId', status: 'pending' });
     });
   });
 

@@ -1,7 +1,10 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+const httpStatus = require('http-status');
+const ApiError = require('../utils/ApiError');
+
+const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
+const model = genAI ? genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-2.5-flash' }) : null;
 
 const systemPromptContent = `
 You are Trustify AI Assistant, a specialized model fine-tuned by Trustify.
@@ -337,6 +340,9 @@ const chat = async (message) => {
 
   // Question: ${message}`;
 
+  if (!model) {
+    throw new ApiError(httpStatus.SERVICE_UNAVAILABLE, 'Chat assistant is not configured (missing GEMINI_API_KEY)');
+  }
   try {
     const result = await model.generateContent({
       systemInstruction,

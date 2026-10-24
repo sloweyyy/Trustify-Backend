@@ -4,9 +4,13 @@ const path = require('path');
 const config = require('../config/config');
 const logger = require('../config/logger');
 
-const transport = nodemailer.createTransport(config.email.smtp);
+const smtpConfigured = Boolean(config.email.smtp.host && config.email.smtp.auth.user);
+// Without SMTP, emails are rendered to JSON and logged so flows still complete.
+const transport = smtpConfigured ? nodemailer.createTransport(config.email.smtp) : nodemailer.createTransport({ jsonTransport: true });
 /* istanbul ignore next */
-if (config.env !== 'test') {
+if (!smtpConfigured) {
+  logger.warn('SMTP not configured: emails will be logged, not sent');
+} else if (config.env !== 'test') {
   transport
     .verify()
     .then(() => logger.info('Connected to email server'))
@@ -22,7 +26,9 @@ if (config.env !== 'test') {
  */
 const sendEmail = async (to, subject, html) => {
   const msg = { from: config.email.from, to, subject, html };
-  await transport.sendMail(msg);
+  const info = await transport.sendMail(msg);
+  if (!smtpConfigured) logger.info(`[email:not-sent] to=${to} subject="${subject}"`);
+  return info;
 };
 
 /**

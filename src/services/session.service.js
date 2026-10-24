@@ -16,19 +16,15 @@ const ApiError = require('../utils/ApiError');
 const { userService, notarizationService } = require('.');
 const emailService = require('./email.service');
 const { payOS } = require('../config/payos');
-const { bucket, downloadFile } = require('../config/firebase');
-const { uploadToIPFS, mintDocumentNFT, getTransactionData } = require('../config/blockchain');
+const { uploadFile, downloadFile } = require('../config/storage');
+const { uploadToIPFS, mintDocumentNFT, getTransactionData, isNotarizedAssetUrl } = require('../config/blockchain');
 const userWalletService = require('./userWallet.service');
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const uploadFileToFirebase = async (file, rootFolder, folderName) => {
-  const fileName = `${file.originalname}`;
-  const fileRef = bucket.file(`${rootFolder}/${folderName}/${fileName}`);
-
   try {
-    await fileRef.save(file.buffer, { contentType: file.mimetype });
-    return `https://storage.googleapis.com/${bucket.name}/${rootFolder}/${folderName}/${fileName}`;
+    return await uploadFile(`${rootFolder}/${folderName}/${file.originalname}`, file.buffer, file.mimetype);
   } catch (error) {
     console.error('Error uploading file:', error.message);
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to upload file');
@@ -1253,7 +1249,7 @@ const autoVerifySession = async () => {
       const existingFileNames = session.files.map((file) => file.filename);
 
       // Check for IPFS files
-      const hasIPFSFiles = session.files.some((file) => file.firebaseUrl.startsWith('https://gateway.pinata.cloud/ipfs'));
+      const hasIPFSFiles = session.files.some((file) => isNotarizedAssetUrl(file.firebaseUrl));
 
       if (hasIPFSFiles) {
         // Automatically approve if there are IPFS files
