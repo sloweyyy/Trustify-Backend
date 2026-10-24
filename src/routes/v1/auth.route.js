@@ -1,5 +1,8 @@
 const express = require('express');
 const passport = require('passport');
+const httpStatus = require('http-status');
+const ApiError = require('../../utils/ApiError');
+const config = require('../../config/config');
 const validate = require('../../middlewares/validate');
 const authValidation = require('../../validations/auth.validation');
 const authController = require('../../controllers/auth.controller');
@@ -23,11 +26,17 @@ router.post('/reset-password', validate(authValidation.resetPassword), authContr
 router.post('/send-verification-email', auth(), authController.sendVerificationEmail);
 router.post('/verify-email', validate(authValidation.verifyEmail), authController.verifyEmail);
 
-// Google OAuth2 routes
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+// Google OAuth2 routes (only when GOOGLE_CLIENT_ID/SECRET are set)
+const googleEnabled = Boolean(config.google.clientID && config.google.clientSecret);
+const requireGoogle = (req, res, next) =>
+  googleEnabled ? next() : next(new ApiError(httpStatus.SERVICE_UNAVAILABLE, 'Google login is not configured'));
+router.get('/google', requireGoogle, (req, res, next) =>
+  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next)
+);
 router.get(
   '/google/callback',
-  passport.authenticate('google', { failureRedirect: '/login', session: false }),
+  requireGoogle,
+  (req, res, next) => passport.authenticate('google', { failureRedirect: '/login', session: false })(req, res, next),
   authController.loginWithGoogle
 );
 module.exports = router;

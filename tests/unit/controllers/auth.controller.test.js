@@ -14,34 +14,15 @@ const { authService, userService, tokenService, emailService } = require('../../
 const { auth, db } = require('../../../src/config/firebase');
 const catchAsync = require('../../../src/utils/catchAsync');
 
-// Mock ethers and related functionalities
-jest.mock('ethers', () => {
-  const originalModule = jest.requireActual('ethers');
-  return {
-    ...originalModule,
-    Wallet: jest.fn().mockImplementation(() => ({
-      address: '0xMockAddress',
-    })),
-    Contract: jest.fn().mockImplementation(() => ({
-      mintNFT: jest.fn(),
-      interface: {
-        parseLog: jest.fn(),
-      },
-      tokenURI: jest.fn(),
-    })),
-    JsonRpcProvider: jest.fn().mockImplementation(() => ({
-      getTransaction: jest.fn(),
-      getTransactionReceipt: jest.fn(),
-      getBlock: jest.fn(),
-    })),
-  };
-});
-
 jest.mock('../../../src/services/auth.service');
 jest.mock('../../../src/services/user.service');
 jest.mock('../../../src/services/token.service');
 jest.mock('../../../src/services/email.service');
-jest.mock('../../../src/config/firebase');
+jest.mock('../../../src/config/firebase', () => ({
+  enabled: true,
+  auth: { getUserByEmail: jest.fn(), createUser: jest.fn(), deleteUser: jest.fn() },
+  db: { ref: jest.fn() },
+}));
 
 describe('Auth Controller', () => {
   let req, res, next;

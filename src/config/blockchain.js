@@ -74,9 +74,33 @@ const getViewLinks = (mintAddress, metadataUri) => {
   };
 };
 
-const pinata = new PinataSDK(process.env.PINATA_API_KEY, process.env.PINATA_SECRET_KEY);
+const pinataEnabled = Boolean(process.env.PINATA_API_KEY && process.env.PINATA_SECRET_KEY);
+const pinata = pinataEnabled ? new PinataSDK(process.env.PINATA_API_KEY, process.env.PINATA_SECRET_KEY) : null;
+
+// URLs produced by uploadToIPFS: Pinata gateway, or app storage when Pinata is not configured.
+const METADATA_FOLDER = 'nft-metadata';
+const isNotarizedAssetUrl = (url) => Boolean(url) && (url.includes('/ipfs/') || url.includes(`/${METADATA_FOLDER}/`));
+
+// Without Pinata, keep the file and its metadata JSON in regular storage.
+const uploadToStorage = async (fileBuffer, fileName) => {
+  // Lazy require: storage pulls in firebase/logger, which this module must not depend on at load time.
+  // eslint-disable-next-line global-require
+  const { uploadFile } = require('./storage');
+  const prefix = `${METADATA_FOLDER}/${Date.now()}`;
+  const fileUrl = await uploadFile(`${prefix}/${fileName}`, fileBuffer);
+  const metadataJson = {
+    name: fileName.slice(0, 32),
+    description: `Document: ${fileName}`,
+    image: '',
+    properties: { files: [{ type: 'application/octet-stream', name: fileName, uri: fileUrl }] },
+  };
+  return uploadFile(`${prefix}/metadata.json`, Buffer.from(JSON.stringify(metadataJson)), 'application/json');
+};
 
 const uploadToIPFS = async (fileBuffer, fileName) => {
+  if (!pinataEnabled) {
+    return uploadToStorage(fileBuffer, fileName);
+  }
   try {
     console.log(`Uploading file to IPFS: ${fileName}`);
 
@@ -130,7 +154,7 @@ const uploadToIPFS = async (fileBuffer, fileName) => {
 
 const mintDocumentNFT = async (metadataUri) => {
   try {
-    const name = metadataUri.name || 'Document NFT';
+    const name = 'Trustify Notarized Doc';
     const symbol = 'DOC';
 
     const metaplex = Metaplex.make(connection).use(keypairIdentity(walletKeypair));
@@ -301,6 +325,7 @@ module.exports = {
   mintDocumentNFT,
   getTransactionData,
   pinata,
+  isNotarizedAssetUrl,
   getViewLinks,
   extractIPFSCid,
   getMetadataByMint,

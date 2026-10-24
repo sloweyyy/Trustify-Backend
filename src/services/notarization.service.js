@@ -6,11 +6,11 @@ const { ObjectId } = require('mongoose').Types;
 const emailService = require('./email.service');
 const { Document, StatusTracking, ApproveHistory, NotarizationService, NotarizationField } = require('../models');
 const ApiError = require('../utils/ApiError');
-const { bucket, downloadFile } = require('../config/firebase');
+const { uploadFile, downloadFile } = require('../config/storage');
 const RequestSignature = require('../models/requestSignature.model');
 const { payOS } = require('../config/payos');
 const Payment = require('../models/payment.model');
-const { uploadToIPFS, mintDocumentNFT, getViewLinks } = require('../config/blockchain');
+const { uploadToIPFS, mintDocumentNFT, getViewLinks, isNotarizedAssetUrl } = require('../config/blockchain');
 const userWalletService = require('./userWallet.service');
 
 const generateOrderCode = () => {
@@ -21,12 +21,8 @@ const generateOrderCode = () => {
 };
 
 const uploadFileToFirebase = async (file, rootFolder, folderName) => {
-  const fileName = `${file.originalname}`;
-  const fileRef = bucket.file(`${rootFolder}/${folderName}/${fileName}`);
-
   try {
-    await fileRef.save(file.buffer, { contentType: file.mimetype });
-    return `https://storage.googleapis.com/${bucket.name}/${rootFolder}/${folderName}/${fileName}`;
+    return await uploadFile(`${rootFolder}/${folderName}/${file.originalname}`, file.buffer, file.mimetype);
   } catch (error) {
     console.error('Error uploading file:', error.message);
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to upload file');
@@ -842,9 +838,7 @@ const autoVerifyDocument = async () => {
       const document = tracking.documentInfo;
 
       // Check if any file URL contains IPFS gateway
-      const hasIPFSFile = document.files.some(
-        (file) => file.firebaseUrl && file.firebaseUrl.includes('https://gateway.pinata.cloud/ipfs/')
-      );
+      const hasIPFSFile = document.files.some((file) => isNotarizedAssetUrl(file.firebaseUrl));
 
       // If has IPFS file, automatically move to processing
       if (hasIPFSFile) {

@@ -7,6 +7,11 @@ const createPayment = catchAsync(async (req, res) => {
   res.status(httpStatus.CREATED).send(payment);
 });
 
+const getMyPayments = catchAsync(async (req, res) => {
+  const payments = await paymentService.getPaymentsByUser(req.user.id, req.query.status);
+  res.send(payments);
+});
+
 const getPayment = catchAsync(async (req, res) => {
   const payment = await paymentService.getPaymentById(req.params.paymentId);
   res.send(payment);
@@ -28,6 +33,7 @@ const updateAllPayments = catchAsync(async (req, res) => {
 });
 
 module.exports = {
+  getMyPayments,
   createPayment,
   getPayment,
   handlePaymentCallback,

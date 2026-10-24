@@ -1,0 +1,603 @@
+[
+  {
+    "name": "Lĩnh vực Vay-mượn tài sản",
+    "name_en": "Asset Loan",
+    "code": "LOAN",
+    "description": "Các dịch vụ công chứng thuộc lĩnh vực Vay-mượn tài sản",
+    "services": [
+      {
+        "name": "Công chứng hợp đồng vay tài sản",
+        "code": "Loan_Contract",
+        "description": "1 bản hợp đồng vay tài sản đã được công chứng (kèm dấu công chứng). 1 bản lưu hợp đồng tại văn phòng công chứng.",
+        "price": 300000,
+        "required_documents": [
+          "identity_doc",
+          "residence_book",
+          "marriage_cert",
+          "loan_contract",
+          "loan_info"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng bảo lãnh",
+        "code": "Guarantee_Contract",
+        "description": "1 bản hợp đồng bảo lãnh đã được công chứng (kèm dấu công chứng). 1 bản lưu hợp đồng tại văn phòng công chứng.",
+        "price": 300000,
+        "required_documents": [
+          "identity_doc",
+          "guarantee_contract",
+          "marriage_cert"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng tín chấp",
+        "code": "Credit_Contract",
+        "description": "1 bản hợp đồng tín chấp đã được công chứng (kèm dấu công chứng). 1 bản lưu hợp đồng tại văn phòng công chứng.",
+        "price": 300000,
+        "required_documents": [
+          "identity_doc",
+          "loan_contract"
+        ]
+      },
+      {
+        "name": "Công chứng biên bản thỏa thuận xử lý nợ",
+        "code": "Debt_Settlement_Agreement",
+        "description": "1 bản biên bản thỏa thuận đã được công chứng (kèm dấu công chứng). 1 bản lưu biên bản tại văn phòng công chứng.",
+        "price": 300000,
+        "required_documents": [
+          "identity_doc",
+          "agreement_minutes",
+          "loan_info"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Lĩnh vực Di chúc- Thừa kế",
+    "name_en": "Wills & Inheritance",
+    "code": "INHERITANCE",
+    "description": "Các dịch vụ công chứng thuộc lĩnh vực Di chúc- Thừa kế",
+    "services": [
+      {
+        "name": "Công chứng lập di chúc",
+        "code": "Will_Writing",
+        "description": "Bản di chúc đã công chứng. Bản lưu trữ tại văn phòng công chứng.",
+        "price": 500000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "marriage_cert",
+          "will"
+        ]
+      },
+      {
+        "name": "Công chứng văn bản nhận thừa kế",
+        "code": "Inheritance_Acceptance",
+        "description": "Văn bản nhận thừa kế đã công chứng. Bản lưu trữ tại văn phòng công chứng.",
+        "price": 500000,
+        "required_documents": [
+          "identity_doc",
+          "death_cert",
+          "will",
+          "inheritance_doc",
+          "relation_proof"
+        ]
+      },
+      {
+        "name": "Công chứng văn bản thỏa thuận phân chia di sản thừa kế",
+        "code": "Inheritance_Division_Agreement",
+        "description": "Văn bản thỏa thuận phân chia di sản đã công chứng. Bản lưu trữ tại văn phòng công chứng.",
+        "price": 500000,
+        "required_documents": [
+          "identity_doc",
+          "death_cert",
+          "inheritance_doc",
+          "relation_proof",
+          "will"
+        ]
+      },
+      {
+        "name": "Công chứng văn bản từ chối nhận di sản thừa kế",
+        "code": "Inheritance_Renunciation",
+        "description": "Văn bản từ chối nhận di sản đã công chứng. Bản lưu trữ tại văn phòng công chứng.",
+        "price": 500000,
+        "required_documents": [
+          "identity_doc",
+          "death_cert",
+          "will",
+          "inheritance_doc",
+          "relation_proof"
+        ]
+      },
+      {
+        "name": "Công chứng văn bản khai nhận di sản thừa kế",
+        "code": "Inheritance_Declaration",
+        "description": "Văn bản khai nhận di sản đã công chứng. Bản lưu trữ tại văn phòng công chứng.",
+        "price": 500000,
+        "required_documents": [
+          "identity_doc",
+          "death_cert",
+          "will",
+          "inheritance_doc",
+          "relation_proof"
+        ]
+      },
+      {
+        "name": "Công chứng thỏa thuận về chia tài sản chung trong thừa kế",
+        "code": "Shared_Inheritance_Division",
+        "description": "Văn bản thỏa thuận chia tài sản đã công chứng. Bản lưu trữ tại văn phòng công chứng.",
+        "price": 500000,
+        "required_documents": [
+          "identity_doc",
+          "death_cert",
+          "inheritance_doc",
+          "relation_proof"
+        ]
+      },
+      {
+        "name": "Công chứng các văn bản liên quan khác",
+        "code": "Other_Inheritance_Documents",
+        "description": "Văn bản công chứng (di chúc đặc biệt, di chúc cho người nước ngoài, v.v.). Bản lưu trữ tại văn phòng công chứng.",
+        "price": 500000,
+        "required_documents": [
+          "identity_doc",
+          "inheritance_doc",
+          "relation_proof"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Lĩnh vực Cầm cố-Thế chấp",
+    "name_en": "Pledge & Mortgage",
+    "code": "MORTGAGE",
+    "description": "Các dịch vụ công chứng thuộc lĩnh vực Cầm cố-Thế chấp",
+    "services": [
+      {
+        "name": "Công chứng hợp đồng cầm cố tài sản",
+        "code": "Pledge_Agreement",
+        "description": "Giấy tờ công chứng: Hợp đồng cầm cố tài sản đã công chứng. Bản lưu tại văn phòng công chứng: Hợp đồng và giấy tờ liên quan sẽ được lưu trữ tại văn phòng.",
+        "price": 400000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "loan_contract"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng thế chấp tài sản",
+        "code": "Mortgage_Contract",
+        "description": "Giấy tờ công chứng: Hợp đồng thế chấp tài sản đã công chứng. Bản lưu tại văn phòng công chứng: Bản sao hợp đồng và giấy tờ liên quan được lưu trữ.",
+        "price": 400000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "loan_contract"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng thế chấp quyền sử dụng đất và tài sản gắn liền với đất",
+        "code": "Land_and_Property_Mortgage",
+        "description": "Giấy tờ công chứng: Hợp đồng thế chấp quyền sử dụng đất và tài sản gắn liền với đất đã công chứng. Bản lưu tại văn phòng công chứng: Bản sao hợp đồng và giấy tờ liên quan.",
+        "price": 400000,
+        "required_documents": [
+          "identity_doc",
+          "land_cert",
+          "ownership_proof",
+          "marriage_cert"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng thế chấp tài sản hình thành trong tương lai",
+        "code": "Future_Asset_Mortgage",
+        "description": "Giấy tờ công chứng: Hợp đồng thế chấp tài sản hình thành trong tương lai đã được công chứng. Bản lưu tại văn phòng công chứng: Bản sao hợp đồng và các tài liệu liên quan lưu trữ.",
+        "price": 400000,
+        "required_documents": [
+          "identity_doc",
+          "future_asset_agreement",
+          "ownership_proof"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Lĩnh vực Sao y chứng thực",
+    "name_en": "Certified Copies",
+    "code": "CERTIFICATION",
+    "description": "Các dịch vụ công chứng thuộc lĩnh vực Sao y chứng thực",
+    "services": [
+      {
+        "name": "Chứng thực bản sao từ bản chính",
+        "code": "Certified_Copy",
+        "description": "Bản sao chứng thực Bản lưu trữ tại văn phòng công chứng",
+        "price": 50000,
+        "required_documents": [
+          "original_doc"
+        ]
+      },
+      {
+        "name": "Chứng thực chữ ký",
+        "code": "Signature_Certification",
+        "description": "Chứng thực chữ ký Bản lưu trữ tại văn phòng công chứng",
+        "price": 50000,
+        "required_documents": [
+          "identity_doc"
+        ]
+      },
+      {
+        "name": "Chứng thực hợp đồng, giao dịch",
+        "code": "Contract_Certification",
+        "description": "Chứng thực hợp đồng, giao dịch Bản lưu trữ tại văn phòng công chứng",
+        "price": 50000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof"
+        ]
+      },
+      {
+        "name": "Chứng thực bản dịch",
+        "code": "Translation_Certification",
+        "description": "Chứng thực bản dịch Bản lưu trữ tại văn phòng công chứng",
+        "price": 50000,
+        "required_documents": [
+          "original_doc",
+          "translated_doc",
+          "identity_doc"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Lĩnh vực Ủy quyền",
+    "name_en": "Authorization",
+    "code": "AUTHORIZATION",
+    "description": "Các dịch vụ công chứng thuộc lĩnh vực Ủy quyền",
+    "services": [
+      {
+        "name": "Công chứng hợp đồng ủy quyền",
+        "code": "Authorization_Contract",
+        "description": "Hợp đồng ủy quyền đã công chứng. Bản lưu trữ tại văn phòng công chứng. Các giấy tờ khác liên quan nếu có.",
+        "price": 150000,
+        "required_documents": [
+          "identity_doc",
+          "auth_contract",
+          "ownership_proof",
+          "marriage_cert"
+        ]
+      },
+      {
+        "name": "Công chứng giấy ủy quyền",
+        "code": "Power_of_Attorney",
+        "description": "Giấy ủy quyền đã công chứng. Bản lưu trữ tại văn phòng công chứng.",
+        "price": 150000,
+        "required_documents": [
+          "identity_doc",
+          "auth_contract",
+          "marriage_cert"
+        ]
+      },
+      {
+        "name": "Công chứng văn bản hủy ủy quyền",
+        "code": "Authorization_Cancellation",
+        "description": "Văn bản hủy ủy quyền đã công chứng. Bản lưu trữ tại văn phòng công chứng.",
+        "price": 150000,
+        "required_documents": [
+          "identity_doc",
+          "cancel_doc",
+          "auth_contract"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng ủy quyền quản lý tài sản",
+        "code": "Asset_Management_Authorization",
+        "description": "Hợp đồng ủy quyền quản lý tài sản đã công chứng. Bản lưu trữ tại văn phòng công chứng.",
+        "price": 150000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "auth_contract"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng ủy quyền mua bán bất động sản",
+        "code": "Real_Estate_Authorization",
+        "description": "Hợp đồng ủy quyền mua bán bất động sản đã công chứng. Bản lưu trữ tại văn phòng công chứng.",
+        "price": 150000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "auth_contract"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Lĩnh vực Đặt cọc",
+    "name_en": "Deposit",
+    "code": "DEPOSIT",
+    "description": "Các dịch vụ công chứng thuộc lĩnh vực Đặt cọc",
+    "services": [
+      {
+        "name": "Công chứng hợp đồng đặt cọc",
+        "code": "Deposit_Contract",
+        "description": "Hợp đồng đặt cọc đã được công chứng: Bản hợp đồng đã có dấu xác nhận của công chứng viên, mỗi bên giữ một bản. Bản lưu trữ tại văn phòng công chứng: Bản hợp đồng được lưu trữ tại văn phòng công chứng để đối chiếu khi cần thiết.",
+        "price": 200000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "deposit_contract",
+          "marriage_cert"
+        ]
+      },
+      {
+        "name": "Công chứng văn bản hủy bỏ hợp đồng đặt cọc",
+        "code": "Deposit_Cancellation",
+        "description": "Văn bản hủy bỏ hợp đồng đặt cọc đã được công chứng: Văn bản hủy bỏ đã được xác nhận bởi công chứng viên, mỗi bên giữ một bản. Bản lưu trữ tại văn phòng công chứng: Văn bản hủy bỏ hợp đồng sẽ được lưu trữ tại văn phòng công chứng để phục vụ đối chiếu khi cần.",
+        "price": 200000,
+        "required_documents": [
+          "identity_doc",
+          "cancel_doc",
+          "deposit_contract"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Lĩnh vực Tặng-Cho tài sản",
+    "name_en": "Asset Gifting",
+    "code": "GIFT",
+    "description": "Các dịch vụ công chứng thuộc lĩnh vực Tặng-Cho tài sản",
+    "services": [
+      {
+        "name": "Công chứng hợp đồng tặng, cho bất động sản",
+        "code": "Real_Estate_Gift_Agreement",
+        "description": "Bản công chứng hợp đồng tặng - cho bất động sản. Bản lưu trữ của hợp đồng tại văn phòng công chứng.",
+        "price": 400000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "gift_agreement",
+          "marriage_cert"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng tặng, cho động sản",
+        "code": "Personal_Property_Gift_Agreement",
+        "description": "Bản công chứng hợp đồng tặng - cho động sản. Bản lưu trữ của hợp đồng tại văn phòng công chứng.",
+        "price": 400000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "gift_agreement",
+          "marriage_cert"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng tặng, cho tài sản gắn liền với quyền sử dụng đấ",
+        "code": "Land_Attached_Property_Gift",
+        "description": "Bản công chứng hợp đồng tặng - cho tài sản gắn liền với quyền sử dụng đất. Bản lưu trữ của hợp đồng tại văn phòng công chứng.",
+        "price": 400000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "gift_agreement",
+          "marriage_cert"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng tặng, cho tài sản là tài sản chung",
+        "code": "Shared_Property_Gift",
+        "description": "Bản công chứng hợp đồng tặng - cho tài sản chung. Bản lưu trữ của hợp đồng tại văn phòng công chứng.",
+        "price": 400000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "gift_agreement",
+          "marriage_cert"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Lĩnh vực Thuê tài sản",
+    "name_en": "Asset Lease",
+    "code": "LEASE",
+    "description": "Các dịch vụ công chứng thuộc lĩnh vực Thuê tài sản",
+    "services": [
+      {
+        "name": "Công chứng hợp đồng thuê bất động sản (nhà, đất)",
+        "code": "Real_Estate_Lease",
+        "description": "Hợp đồng thuê bất động sản đã được công chứng. Bản lưu trữ hợp đồng công chứng tại văn phòng công chứng.",
+        "price": 250000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "lease_contract",
+          "marriage_cert"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng thuê động sản",
+        "code": "Personal_Property_Lease",
+        "description": "Hợp đồng thuê động sản đã được công chứng. Bản lưu trữ hợp đồng công chứng tại văn phòng công chứng.",
+        "price": 250000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "lease_contract",
+          "marriage_cert"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng thuê tài sản doanh nghiệp",
+        "code": "Business_Asset_Lease",
+        "description": "Hợp đồng thuê tài sản doanh nghiệp đã được công chứng. Bản lưu trữ hợp đồng công chứng tại văn phòng công chứng.",
+        "price": 250000,
+        "required_documents": [
+          "identity_doc",
+          "business_cert",
+          "ownership_proof",
+          "lease_contract"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng thuê nhà ở xã hội",
+        "code": "Social_Housing_Lease",
+        "description": "Hợp đồng thuê nhà ở xã hội đã được công chứng. Bản lưu trữ hợp đồng công chứng tại văn phòng công chứng.",
+        "price": 250000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "lease_contract",
+          "marriage_cert"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng cho thuê lại tài sản",
+        "code": "Sublease_Contract",
+        "description": "Hợp đồng thuê lại tài sản đã được công chứng. Bản lưu trữ hợp đồng công chứng tại văn phòng công chứng.",
+        "price": 250000,
+        "required_documents": [
+          "identity_doc",
+          "lease_contract",
+          "marriage_cert",
+          "ownership_proof"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Lĩnh vực Chuyển nhượng, Mua bán",
+    "name_en": "Transfer & Sale",
+    "code": "TRANSFER",
+    "description": "Các dịch vụ công chứng thuộc lĩnh vực Chuyển nhượng, Mua bán",
+    "services": [
+      {
+        "name": "Công chứng hợp đồng chuyển nhượng bất động sản",
+        "code": "Real_Estate_Transfer",
+        "description": "Hợp đồng chuyển nhượng bất động sản đã được công chứng. Bản lưu trữ hợp đồng tại văn phòng công chứng.",
+        "price": 500000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "marriage_cert",
+          "sales_contract"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng mua bán phương tiện giao thông",
+        "code": "Vehicle_Sales_Contract",
+        "description": "Hợp đồng mua bán phương tiện giao thông đã được công chứng. Bản lưu trữ hợp đồng tại văn phòng công chứng.",
+        "price": 500000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "marriage_cert",
+          "sales_contract"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng chuyển nhượng cổ phần, cổ phiếu",
+        "code": "Share_Transfer",
+        "description": "Hợp đồng chuyển nhượng cổ phần/cổ phiếu đã được công chứng. Bản lưu trữ hợp đồng tại văn phòng công chứng.",
+        "price": 500000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "business_cert",
+          "share_transfer_contract"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng chuyển nhượng quyền sử dụng đất nông nghiệp",
+        "code": "Agricultural_Land_Transfer",
+        "description": "Hợp đồng chuyển nhượng quyền sử dụng đất nông nghiệp đã được công chứng. Bản lưu trữ hợp đồng tại văn phòng công chứng.",
+        "price": 500000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "marriage_cert",
+          "land_transfer_contract"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng mua bán tài sản doanh nghiệp",
+        "code": "Business_Asset_Sale",
+        "description": "Hợp đồng mua bán tài sản doanh nghiệp đã được công chứng. Bản lưu trữ hợp đồng tại văn phòng công chứng.",
+        "price": 500000,
+        "required_documents": [
+          "identity_doc",
+          "business_cert",
+          "ownership_proof",
+          "sales_contract"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Lĩnh vực Góp vốn",
+    "name_en": "Capital Contribution",
+    "code": "CAPITAL",
+    "description": "Các dịch vụ công chứng thuộc lĩnh vực Góp vốn",
+    "services": [
+      {
+        "name": "Công chứng hợp đồng góp vốn bằng tài sản bất động sản",
+        "code": "Real_Estate_Capital_Contribution",
+        "description": "Hợp đồng góp vốn đã được công chứng. Bản lưu trữ tại văn phòng công chứng.",
+        "price": 450000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "marriage_cert",
+          "capital_contribution_contract"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng góp vốn bằng động sản",
+        "code": "Personal_Property_Capital_Contribution",
+        "description": "Hợp đồng góp vốn đã được công chứng. Bản lưu trữ tại văn phòng công chứng.",
+        "price": 450000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "marriage_cert",
+          "capital_contribution_contract"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng góp vốn bằng cổ phần/cổ phiếu",
+        "code": "Share_Capital_Contribution",
+        "description": "Hợp đồng góp vốn đã được công chứng. Bản lưu trữ tại văn phòng công chứng.",
+        "price": 450000,
+        "required_documents": [
+          "identity_doc",
+          "ownership_proof",
+          "capital_contribution_contract"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng góp vốn bằng tài sản doanh nghiệp",
+        "code": "Business_Asset_Capital_Contribution",
+        "description": "Hợp đồng góp vốn đã được công chứng. Bản lưu trữ tại văn phòng công chứng.",
+        "price": 450000,
+        "required_documents": [
+          "identity_doc",
+          "business_cert",
+          "ownership_proof",
+          "capital_contribution_contract"
+        ]
+      },
+      {
+        "name": "Công chứng hợp đồng góp vốn bằng tiền mặt hoặc tiền gửi ngân hàng",
+        "code": "Cash_Capital_Contribution",
+        "description": "Hợp đồng góp vốn đã được công chứng. Bản lưu trữ tại văn phòng công chứng.",
+        "price": 450000,
+        "required_documents": [
+          "identity_doc",
+          "capital_contribution_contract",
+          "bank_statement"
+        ]
+      }
+    ]
+  }
+]

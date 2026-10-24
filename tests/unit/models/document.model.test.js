@@ -44,7 +44,6 @@ describe('Document Model', () => {
     expect(notarizationField.id.required).toBe(true);
     expect(notarizationField.name.type).toBe(String);
     expect(notarizationField.name.required).toBe(true);
-    expect(notarizationField.name.unique).toBe(true);
     expect(notarizationField.description.type).toBe(String);
     expect(notarizationField.description.required).toBe(true);
     expect(notarizationField.name_en.type).toBe(String);

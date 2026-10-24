@@ -157,6 +157,52 @@ BUNDLR_CURRENCY=solana
 
 ```
 
+## QA Environment
+
+| | URL |
+|---|---|
+| Web app | https://trustify-notary.vercel.app |
+| API | https://trustify-api-ar4i.onrender.com (Swagger: `/v1/docs`, health: `/health`) |
+
+QA accounts (created by `yarn seed`, password `Trustify@123`):
+
+| Role | Email |
+|---|---|
+| Admin | `trustify.admin@example.com` |
+| Notary | `trustify.notary@example.com` |
+| User | `trustify.user@example.com`, `trustify.user2@example.com` |
+
+The API runs on Render's free plan and sleeps after 15 minutes idle; the first request after that takes about a minute.
+
+## Deployment
+
+All services run on free tiers:
+
+| Piece | Service | Notes |
+|---|---|---|
+| API | Render web service (`render.yaml`) | Node 20, `node src/index.js`, health check `/health` |
+| Database | MongoDB Atlas M0 | Network access `0.0.0.0/0` because Render free has no static IPs |
+| Files | Supabase Storage | Public bucket `trustify`; set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
+| Web app | Vercel (`Trustify-Frontend/vercel.json`) | Set `REACT_APP_API_BASE_URL` to `<api>/v1` |
+| NFTs | Solana devnet | `WALLET_PRIVATE_KEY` = base64 secret key with devnet SOL |
+
+Every integration is optional, so the API also starts with only `MONGODB_URL` and `JWT_SECRET`:
+
+| Missing | Behaviour |
+|---|---|
+| PayOS keys (or `PAYMENT_MODE=mock`) | Checkout is simulated as paid |
+| Supabase / Firebase | Files are written to `./uploads` (lost on Render restarts) |
+| Pinata | NFT metadata is stored in file storage |
+| SMTP | Emails are logged instead of sent |
+| Google OAuth / Gemini | `/v1/auth/google` and `/v1/chatbot` return 503 |
+
+After deploying, seed and run the end-to-end check (needs `PAYMENT_MODE=mock` for the automatic payment step):
+
+```bash
+MONGODB_URL=<atlas-url> yarn seed
+API_URL=https://<api>/v1 node scripts/smoke-e2e.js
+```
+
 ## API Documentation
 
 The API documentation can be accessed at `/v1/docs`. You can view the list of available APIs and their specifications by running the server and visiting `http://localhost:3000/v1/docs` in your browser.

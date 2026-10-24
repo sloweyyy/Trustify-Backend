@@ -1,17 +1,14 @@
-FROM node:alpine
-
-RUN mkdir -p /usr/src/node-app && chown -R node:node /usr/src/node-app
+FROM node:20-alpine
 
 WORKDIR /usr/src/node-app
-
-COPY package.json yarn.lock ./
-
+RUN chown node:node /usr/src/node-app
 USER node
 
-RUN yarn install --pure-lockfile
+COPY --chown=node:node package.json yarn.lock ./
+RUN yarn install --frozen-lockfile --production && yarn cache clean
 
 COPY --chown=node:node . .
 
-EXPOSE 3100
-
-CMD ["yarn", "start"]
+ENV NODE_ENV=production PORT=3000
+EXPOSE 3000
+CMD ["node", "src/index.js"]

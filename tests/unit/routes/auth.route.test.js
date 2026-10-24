@@ -88,20 +88,11 @@ describe('Auth Routes', () => {
     await request(app).post('/v1/auth/verify-email').query({ token: 'some-verify-token' }).expect(204);
   });
 
-  test('GET /v1/auth/google nên trả về 404', async () => {
-    passport.authenticate.mockImplementation((strategy, options) => (req, res, next) => {
-      res.redirect('/auth/google/callback');
-    });
-
-    await request(app).get('/v1/auth/google').expect(404);
+  test('GET /v1/auth/google returns 503 when Google OAuth is not configured', async () => {
+    await request(app).get('/v1/auth/google').expect(503);
   });
 
-  test('GET /v1/auth/google/callback nên trả về 200', async () => {
-    passport.authenticate.mockImplementation((strategy, options, callback) => (req, res, next) => {
-      req.user = { email: 'john@example.com', password: 'password1' };
-      callback(null, req.user);
-    });
-
-    await request(app).get('/v1/auth/google/callback').expect(200);
+  test('GET /v1/auth/google/callback returns 503 when Google OAuth is not configured', async () => {
+    await request(app).get('/v1/auth/google/callback').expect(503);
   });
 });

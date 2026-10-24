@@ -16,3 +16,6 @@ create-users.js
 env.local
 
 DS_Store
+
+# Local storage driver files
+uploads/
