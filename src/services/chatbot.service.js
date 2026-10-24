@@ -4,7 +4,7 @@ const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
 
 const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
-const model = genAI ? genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-2.5-flash' }) : null;
+const model = genAI ? genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-3.5-flash' }) : null;
 
 const systemPromptContent = `
 You are Trustify AI Assistant, a specialized model fine-tuned by Trustify.
