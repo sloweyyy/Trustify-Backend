@@ -1,37 +1,13 @@
 const express = require('express');
-const httpStatus = require('http-status');
-const multer = require('multer');
 const auth = require('../../middlewares/auth');
 const validate = require('../../middlewares/validate');
 const notarizationValidation = require('../../validations/notarization.validation');
 const notarizationController = require('../../controllers/notarization.controller');
-const ApiError = require('../../utils/ApiError');
 const parseJson = require('../../middlewares/parseJson');
 
+const { upload } = require('../../middlewares/upload');
+
 const router = express.Router();
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // Limit file size to 5MB
-  fileFilter: (req, file, cb) => {
-    const allowedFileTypes = /jpeg|jpg|png|pdf|doc|docx/;
-    // Check both mimetype and extension - MS Office files often have different mimetypes
-    const allowedMimeTypes = [
-      'image/jpeg',
-      'image/png',
-      'application/pdf',
-      'application/msword', // .doc
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
-    ];
-
-    const extname = allowedFileTypes.test(file.originalname.toLowerCase().split('.').pop());
-    const mimeTypeAllowed = allowedMimeTypes.includes(file.mimetype);
-
-    if (mimeTypeAllowed || extname) {
-      return cb(null, true);
-    }
-    cb(new ApiError(httpStatus.BAD_REQUEST, 'Only images, PDFs, and Word documents (doc, docx) are allowed'));
-  },
-});
 
 /**
  * @swagger
