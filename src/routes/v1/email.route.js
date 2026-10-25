@@ -1,7 +1,11 @@
 const express = require('express');
+const auth = require('../../middlewares/auth');
 const emailController = require('../../controllers/email.controller');
 
 const router = express.Router();
+
+// Manual sending tools for admins. The app sends its own emails internally.
+router.use(auth('manageUsers'));
 
 /**
  * @swagger
@@ -25,6 +29,8 @@ module.exports = router;
  *   post:
  *     summary: Send reset password email
  *     tags: [Email]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -60,6 +66,8 @@ module.exports = router;
  *   post:
  *     summary: Send verification email
  *     tags: [Email]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -95,6 +103,8 @@ module.exports = router;
  *   post:
  *     summary: Send session invitation email
  *     tags: [Email]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -130,6 +140,8 @@ module.exports = router;
  *   post:
  *     summary: Send document status update email
  *     tags: [Email]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -174,6 +186,8 @@ module.exports = router;
  *   post:
  *     summary: Send payment email
  *     tags: [Email]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -216,6 +230,8 @@ module.exports = router;
  *   post:
  *     summary: Send document upload confirmation email
  *     tags: [Email]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:

@@ -12,10 +12,10 @@ const router = express.Router();
  */
 
 router.get('/my-payments', auth(), paymentController.getMyPayments);
-router.post('/create-payment', paymentController.createPayment);
-router.get('/get-payment/:paymentId', paymentController.getPayment);
+router.post('/create-payment', auth('manageUsers'), paymentController.createPayment);
+router.get('/get-payment/:paymentId', auth(), paymentController.getPayment);
 router.put('/handle-payment-callback/:orderCode', paymentController.handlePaymentCallback);
-router.get('/get-payment-status/:paymentId', paymentController.getPaymentStatus);
+router.get('/get-payment-status/:paymentId', auth(), paymentController.getPaymentStatus);
 // router.get('/update-all-payments', paymentController.updateAllPayments);
 
 module.exports = router;
@@ -49,6 +49,8 @@ module.exports = router;
  *     summary: Create a new payment
  *     description: Create a new payment with the specified amount, description, and URLs for success or cancellation.
  *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -104,6 +106,8 @@ module.exports = router;
  *     summary: Get a payment by ID
  *     description: Retrieve details of a specific payment by its ID.
  *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: paymentId
@@ -175,6 +179,8 @@ module.exports = router;
  *     summary: Get the status of a payment
  *     description: Get the status of a payment by its ID.
  *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: paymentId
