@@ -1,6 +1,16 @@
 const httpStatus = require('http-status');
 const paymentService = require('../services/payment.service');
 const catchAsync = require('../utils/catchAsync');
+const ApiError = require('../utils/ApiError');
+
+// Only the payer or an admin may look at a payment. Others get 404 so ids can't be probed.
+const getOwnPayment = async (req) => {
+  const payment = await paymentService.getPaymentById(req.params.paymentId);
+  if (req.user.role !== 'admin' && String(payment.userId) !== String(req.user.id)) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Payment not found');
+  }
+  return payment;
+};
 
 const createPayment = catchAsync(async (req, res) => {
   const payment = await paymentService.createPayment(req.body);
@@ -13,8 +23,7 @@ const getMyPayments = catchAsync(async (req, res) => {
 });
 
 const getPayment = catchAsync(async (req, res) => {
-  const payment = await paymentService.getPaymentById(req.params.paymentId);
-  res.send(payment);
+  res.send(await getOwnPayment(req));
 });
 
 const handlePaymentCallback = catchAsync(async (req, res) => {
@@ -23,6 +32,7 @@ const handlePaymentCallback = catchAsync(async (req, res) => {
 });
 
 const getPaymentStatus = catchAsync(async (req, res) => {
+  await getOwnPayment(req);
   const payment = await paymentService.getPaymentStatus(req.params.paymentId);
   res.send(payment);
 });
