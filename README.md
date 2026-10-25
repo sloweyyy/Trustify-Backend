@@ -38,7 +38,7 @@ You can view the official Trustify Pitch Deck on Canva:
 - **API Documentation:** Swagger
 - **Environment Configuration:** Dotenv, Cross-env
 - **Process Management:** PM2
-- **Continuous Integration:** Travis CI
+- **Continuous Integration:** GitHub Actions (`.github/workflows/ci.yml`)
 - **Code Quality:** Coveralls, Codacy
 - **Pre-commit Hooks:** Husky, Lint-staged
 - **Code Formatting:** ESLint, Prettier
