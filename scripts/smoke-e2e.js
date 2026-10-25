@@ -64,11 +64,22 @@ const run = async () => {
     );
     form.append(
       'notarizationField',
-      JSON.stringify({ id: field.id, name: field.name, description: field.description, code: field.code, name_en: field.name_en })
+      JSON.stringify({
+        id: field.id,
+        name: field.name,
+        description: field.description,
+        code: field.code,
+        name_en: field.name_en,
+      })
     );
     form.append(
       'requesterInfo',
-      JSON.stringify({ fullName: 'Nguyen Van A', citizenId: '079200000001', phoneNumber: '0900000001', email: 'trustify.user@example.com' })
+      JSON.stringify({
+        fullName: 'Nguyen Van A',
+        citizenId: '079200000001',
+        phoneNumber: '0900000001',
+        email: 'trustify.user@example.com',
+      })
     );
     form.append('amount', '1');
     return (await axios.post(`${API}/notarization/upload-files`, form, authed(user))).data;
@@ -116,6 +127,35 @@ const run = async () => {
     const items = data.nftItems || [];
     if (!items.length) throw new Error('wallet is empty');
     return items[items.length - 1];
+  });
+
+  await step('document files are private (signed links that work)', async () => {
+    const { data } = await axios.get(`${API}/notarization/document/${documentId}`, authed(user));
+    const links = [...(data.files || []), ...(data.output || [])].map((file) => file.firebaseUrl);
+    if (!links.length || links.some((link) => !/\/v1\/files\/.+[?&]sig=/.test(link))) {
+      throw new Error(`expected signed /v1/files links, got ${JSON.stringify(links)}`);
+    }
+    await axios.get(links[0], { responseType: 'arraybuffer' });
+    if (!/\/v1\/files\//.test(wallet.fileUrl || '')) throw new Error('wallet item has no private file link');
+  });
+
+  await step('public NFT metadata holds only a fingerprint', async () => {
+    const { data } = await axios.get(wallet.metadataUri);
+    const text = JSON.stringify(data);
+    if (!/^[a-f0-9]{64}$/.test((data.properties || {}).sha256 || '') || /\.pdf|\/v1\/files|storage:\/\//.test(text)) {
+      throw new Error(`unexpected metadata: ${text.slice(0, 200)}`);
+    }
+  });
+
+  await step('record verifies the notarized file and rejects a different one', async () => {
+    const check = async (blob) => {
+      const form = new FormData();
+      form.append('mintAddress', wallet.mintAddress);
+      form.append('file', blob, 'notarized_doc.pdf');
+      return (await axios.post(`${API}/nft/verify-file`, form, { timeout: 60000 })).data.match;
+    };
+    if ((await check(pdf('notarized'))) !== true) throw new Error('notarized file did not match its record');
+    if ((await check(pdf('tampered'))) !== false) throw new Error('a different file matched the record');
   });
 
   console.log(`\nMinted: ${wallet.mintAddress}\nExplorer: ${wallet.explorerLink || wallet.solscanLink || '(n/a)'}`);

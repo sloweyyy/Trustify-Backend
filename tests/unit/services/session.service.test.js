@@ -1,6 +1,6 @@
 // Mock external dependencies
 jest.mock('../../../src/config/blockchain', () => ({
-  uploadToIPFS: jest.fn().mockResolvedValue('ipfs://mockHash'),
+  publishDocumentRecord: jest.fn().mockResolvedValue({ metadataUri: 'ipfs://mockHash', sha256: 'a'.repeat(64) }),
   mintDocumentNFT: jest.fn().mockResolvedValue({
     transactionHash: 'mockTransactionHash',
   }),

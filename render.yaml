@@ -29,6 +29,8 @@ services:
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: SUPABASE_BUCKET
+        value: trustify-documents
+      - key: SUPABASE_PUBLIC_BUCKET
         value: trustify
       - key: SOLANA_CLUSTER_URL
         value: https://api.devnet.solana.com

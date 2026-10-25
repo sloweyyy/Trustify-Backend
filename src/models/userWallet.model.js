@@ -42,6 +42,16 @@ const userWalletSchema = mongoose.Schema(
           trim: true,
           description: 'Original document filename',
         },
+        fileUrl: {
+          type: String,
+          default: null,
+          description: 'Private storage reference (storage://...) to the notarized file',
+        },
+        sha256: {
+          type: String,
+          default: null,
+          description: 'SHA-256 fingerprint of the notarized file, also recorded in the NFT metadata',
+        },
         metadataUri: {
           type: String,
           required: true,

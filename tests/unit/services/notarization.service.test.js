@@ -119,7 +119,7 @@ jest.mock('../../../src/config/firebase', () => ({
 
 // Mock Blockchain
 jest.mock('../../../src/config/blockchain', () => ({
-  uploadToIPFS: jest.fn().mockResolvedValue('ipfs://test'),
+  publishDocumentRecord: jest.fn().mockResolvedValue({ metadataUri: 'ipfs://test', sha256: 'a'.repeat(64) }),
   mintDocumentNFT: jest.fn().mockResolvedValue({
     transactionHash: 'test-hash',
   }),
@@ -174,7 +174,8 @@ describe('Notarization Service', () => {
         mimetype: 'application/pdf',
       };
       const result = await notarizationService.uploadFileToFirebase(mockFile, 'documents', 'test');
-      expect(result).toContain('https://storage.googleapis.com/test-bucket');
+      // Documents are private: callers get a storage reference, never a public URL
+      expect(result).toBe('storage://documents/test/test.pdf');
     });
   });
 

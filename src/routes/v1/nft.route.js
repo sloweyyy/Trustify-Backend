@@ -1,5 +1,6 @@
 const express = require('express');
 const nftController = require('../../controllers/nft.controller');
+const { upload } = require('../../middlewares/upload');
 
 const router = express.Router();
 
@@ -79,5 +80,35 @@ const router = express.Router();
  */
 
 router.route('/metadata/:mintAddress').get(nftController.getNFTMetadata);
+router.route('/verify-file').post(upload.single('file'), nftController.verifyFile);
+
+/**
+ * @swagger
+ * /nft/verify-file:
+ *   post:
+ *     summary: Check a file against a notarization record
+ *     description: Hashes the uploaded file (SHA-256, in memory only) and compares it with the fingerprint stored in the NFT's public metadata. `match` is null for legacy records that have no fingerprint.
+ *     tags: [NFT]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [mintAddress, file]
+ *             properties:
+ *               mintAddress:
+ *                 type: string
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       "200":
+ *         description: Comparison result
+ *       "400":
+ *         description: Missing file or mint address, or file type not allowed
+ *       "404":
+ *         description: No record for this mint address
+ */
 
 module.exports = router;

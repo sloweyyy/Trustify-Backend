@@ -2,6 +2,7 @@ const express = require('express');
 const authRoute = require('./auth.route');
 const userRoute = require('./user.route');
 const docsRoute = require('./docs.route');
+const filesRoute = require('./files.route');
 const chatbotRoute = require('./chatbot.route');
 const notarizationRoute = require('./notarization.route');
 const roleRoute = require('./role.route');
@@ -72,6 +73,10 @@ const defaultRoutes = [
   {
     path: '/userWallet',
     route: userWalletRoute,
+  },
+  {
+    path: '/files',
+    route: filesRoute,
   },
   {
     path: '/nft',

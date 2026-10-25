@@ -107,6 +107,11 @@ const sessionSchema = new mongoose.Schema({
         required: false,
         default: null,
       },
+      sha256: {
+        type: String,
+        required: false,
+        default: null,
+      },
       mintedAt: {
         type: Date,
         required: false,

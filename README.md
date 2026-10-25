@@ -51,6 +51,13 @@ stateDiagram-v2
 | `completed` | Hoàn tất |
 | `rejected` | Bị từ chối |
 
+## Document privacy and verification
+
+- **Documents stay private.** Uploads, notarized outputs and signatures go to a private bucket and are stored as `storage://<key>` references. API responses replace each reference with a short-lived signed link (`/v1/files/<key>?exp=…&sig=…`, 1 hour by default), so only someone who can read the record gets a working link.
+- **Only a fingerprint is public.** Each minted NFT's metadata holds the file's SHA-256 hash, issuer and date, never the file, its name or a link to it.
+- **Anyone can verify a copy.** `POST /v1/nft/verify-file` (multipart `file` + `mintAddress`) hashes the file in memory and compares it with the on-chain record: `match: true | false`, or `null` for records minted before fingerprints existed.
+- Existing data was moved with `node scripts/migrate-private-storage.js --apply` (dry-run without `--apply`).
+
 ## Architecture
 
 ```mermaid
@@ -70,8 +77,8 @@ Every external service is **optional**. Without its keys the API falls back safe
 | Missing | Fallback |
 |---|---|
 | PayOS keys, or `PAYMENT_MODE=mock` | Checkout is simulated as paid, so the full flow still runs |
-| Supabase / Firebase | Files are saved to `./uploads` and served at `/uploads` |
-| Pinata | NFT metadata is stored in file storage |
+| Supabase / Firebase | Private files go to `./storage-private`; public NFT metadata to `./uploads` |
+| Pinata | NFT metadata is stored in public file storage |
 | SMTP | Emails are written to the log instead of sent |
 | Google OAuth / Gemini | `/v1/auth/google` and `/v1/chatbot` return `503` |
 | `WALLET_PRIVATE_KEY` | A throwaway keypair is generated; minting fails without devnet SOL |
@@ -119,7 +126,9 @@ Copy `.env.example`; every variable is documented there. The important groups:
 |---|---|---|
 | `MONGODB_URL`, `JWT_SECRET` | ✅ | The only hard requirements |
 | `CLIENT_URL`, `SERVER_URL` | Production | Used for redirects, email links and local file URLs |
-| `STORAGE_DRIVER`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_BUCKET` | Optional | `supabase`, `firebase` or `local`; auto-detected from keys |
+| `STORAGE_DRIVER`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Optional | `supabase`, `firebase` or `local`; auto-detected from keys |
+| `SUPABASE_BUCKET`, `SUPABASE_PUBLIC_BUCKET` | Optional | Private document bucket (default `trustify-documents`) and public metadata bucket (default `trustify`) |
+| `FILE_URL_TTL_SECONDS`, `FILE_URL_SECRET` | Optional | Signed file link lifetime (default 3600) and signing secret (default `JWT_SECRET`) |
 | `SOLANA_CLUSTER_URL`, `WALLET_PRIVATE_KEY` | Optional | Base64 secret key of a wallet with devnet SOL |
 | `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY`, `PAYMENT_MODE` | Optional | Real PayOS checkout, or `mock` |
 | `GEMINI_API_KEY`, `GEMINI_MODEL` | Optional | Chat assistant (default model `gemini-3.5-flash`) |
@@ -179,7 +188,7 @@ The QA stack runs entirely on free tiers:
 |---|---|---|
 | API | Render web service (`render.yaml`) | Node 20, `node src/index.js`, health check `/health`, auto-deploys from `main` |
 | Database | MongoDB Atlas M0 | Network access `0.0.0.0/0`, because Render's free tier has no static IPs |
-| Files | Supabase Storage | Public bucket `trustify` |
+| Files | Supabase Storage | Private bucket `trustify-documents` (documents), public bucket `trustify` (NFT metadata only) |
 | Web app | Vercel | See the [frontend repo](https://github.com/sloweyyy/Trustify-Frontend) |
 | NFTs | Solana devnet | Wallet funded with devnet SOL |
 

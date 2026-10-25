@@ -14,6 +14,7 @@ const morgan = require('./config/morgan');
 const { jwtStrategy } = require('./config/passport');
 const { authLimiter } = require('./middlewares/rateLimiter');
 const routes = require('./routes/v1');
+const signFileRefs = require('./middlewares/signFileRefs');
 const { errorConverter, errorHandler } = require('./middlewares/error');
 const ApiError = require('./utils/ApiError');
 
@@ -74,8 +75,8 @@ if (config.env === 'production') {
   app.use('/v1/auth', authLimiter);
 }
 
-// v1 api routes
-app.use('/v1', routes);
+// v1 api routes; private file references in responses become signed links
+app.use('/v1', signFileRefs, routes);
 
 // send back a 404 error for any unknown api request
 app.use((req, res, next) => {
