@@ -304,47 +304,55 @@ const joinSession = async (sessionId, action, userId) => {
   return session;
 };
 
-const getAllSessions = async (filter, options) => {
-  const { page, limit } = options;
+const toPositiveInt = (value, fallback) => {
+  const parsed = parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const getAllSessions = async (filter = {}, options = {}) => {
+  const page = toPositiveInt(options.page, 1);
+  const limit = toPositiveInt(options.limit, 10);
 
   try {
-    const sessions = await Session.find(filter);
+    const [totalResults, sessions] = await Promise.all([
+      Session.countDocuments(filter),
+      Session.find(filter)
+        .skip((page - 1) * limit)
+        .limit(limit),
+    ]);
 
-    if (!sessions || sessions.length === 0) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'No sessions found');
-    }
+    // One query for all creators instead of one per session.
+    const creatorIds = [...new Set(sessions.map((session) => String(session.createdBy)).filter(Boolean))];
+    const creators = creatorIds.length ? await User.find({ _id: { $in: creatorIds } }) : [];
+    const creatorById = new Map(creators.map((creator) => [String(creator._id), creator]));
 
-    const sessionCreators = await Promise.all(
-      sessions.map(async (session) => {
-        const creator = await userService.getUserById(session.createdBy);
-        return {
-          _id: session._id,
-          sessionName: session.sessionName,
-          notaryField: session.notaryField,
-          notaryService: session.notaryService,
-          startTime: session.startTime,
-          startDate: session.startDate,
-          endTime: session.endTime,
-          endDate: session.endDate,
-          users: session.users,
-          files: session.files,
-          creator: creator ? { _id: creator._id, email: creator.email, name: creator.name } : null,
-        };
-      })
-    );
+    const results = sessions.map((session) => {
+      const creator = creatorById.get(String(session.createdBy));
+      return {
+        _id: session._id,
+        sessionName: session.sessionName,
+        notaryField: session.notaryField,
+        notaryService: session.notaryService,
+        startTime: session.startTime,
+        startDate: session.startDate,
+        endTime: session.endTime,
+        endDate: session.endDate,
+        users: session.users,
+        files: session.files,
+        creator: creator ? { _id: creator._id, email: creator.email, name: creator.name } : null,
+      };
+    });
 
-    const totalResults = sessionCreators.length;
-    const totalPages = Math.ceil(totalResults / limit);
-    const paginatedResults = sessionCreators.slice((page - 1) * limit, page * limit);
-
+    // An empty list is a valid page, not an error.
     return {
-      results: paginatedResults,
+      results,
       page,
       limit,
-      totalPages,
+      totalPages: Math.ceil(totalResults / limit),
       totalResults,
     };
   } catch (error) {
+    if (error instanceof ApiError) throw error;
     console.error('Error retrieving all sessions:', error);
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'An error occurred while retrieving sessions');
   }
