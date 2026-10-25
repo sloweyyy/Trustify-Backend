@@ -1,237 +1,209 @@
-# Trustify - Backend [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sloweyyy/Trustify-Backend)
+<div align="center">
 
-This repository contains the backend code for **Trustify**, a platform for online notarization services that leverages blockchain and NFT for document storage.
+<img src="https://raw.githubusercontent.com/sloweyyy/Trustify-Frontend/main/docs/brand/logos/b-header-color.svg" alt="Trustify" height="56" />
 
-## Pitch Deck
+### Trustify API
 
-You can view the official Trustify Pitch Deck on Canva:
+REST API for **Trustify**, an online notarization (công chứng trực tuyến) platform. It handles document intake, notary review and digital signatures, payment, and minting each notarized document as an NFT on Solana.
 
-👉 [View Pitch Deck on Canva](https://www.canva.com/design/DAGnFWahmVs/YdtYLPQEpEvYkGgjJCtqpg/view?utm_content=DAGnFWahmVs&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
+[![CI](https://github.com/sloweyyy/Trustify-Backend/actions/workflows/ci.yml/badge.svg)](https://github.com/sloweyyy/Trustify-Backend/actions/workflows/ci.yml)
+[![API health](https://img.shields.io/website?url=https%3A%2F%2Ftrustify-api-ar4i.onrender.com%2Fhealth&label=api)](https://trustify-api-ar4i.onrender.com/health)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sloweyyy/Trustify-Backend)
 
-## Features
+**[Live app](https://trustify-notary.vercel.app)** · **[API health](https://trustify-api-ar4i.onrender.com/health)** · **[Frontend](https://github.com/sloweyyy/Trustify-Frontend)** · **[Pitch deck](https://www.canva.com/design/DAGnFWahmVs/YdtYLPQEpEvYkGgjJCtqpg/view)**
 
-- **Document Upload:** Users can upload their documents for notarization.
-- **Notary Service Selection:** Users can select from various notary services tailored to their needs.
-- **Requester Information:** Users provide personal details for notarization requests.
-- **Email Notifications:** Users are kept informed via email about the status of their notarization requests.
-- **Firebase Integration:** Securely stores documents on Firebase Cloud Storage.
-- **Blockchain & NFT Storage:** Document records are stored securely using blockchain technology and NFTs.
-- **Authentication:** Uses JWT-based authentication for secure access.
-- **Role-Based Access Control:** Provides different levels of access based on user roles (e.g., admin, customer, notary).
-- **Google OAuth:** Allows users to sign in using their Google accounts.
-- **Payment Gateway Integration:** Supports online payments for notarization services.
-- **Gemini API Integration:** Uses the Gemini API for generating AI-powered documents.
-- **VietQR Integration:** Generates QR codes for document verification.
-- **API Documentation:** Provides detailed documentation for all APIs using Swagger.
-- **Docker Support:** Allows the application to be run in a Docker container.
+</div>
 
-## Technologies
+## Contents
 
-- **Backend:** Node.js, Express.js
-- **Database:** MongoDB, Mongoose
-- **Storage:** Firebase Cloud Storage
-- **Authentication:** JWT, Passport.js
-- **Validation:** Joi
-- **Testing:** Jest
-- **Security:** Helmet, Xss-Clean, Express-Mongo-Sanitize
-- **Middleware:** Winston (logging), Morgan (HTTP request logging)
-- **API Documentation:** Swagger
-- **Environment Configuration:** Dotenv, Cross-env
-- **Process Management:** PM2
-- **Continuous Integration:** GitHub Actions (`.github/workflows/ci.yml`)
-- **Code Quality:** Coveralls, Codacy
-- **Pre-commit Hooks:** Husky, Lint-staged
-- **Code Formatting:** ESLint, Prettier
-- **Version Control:** Git
-- **Containerization:** Docker
-- **Deployment:** Railway
+- [How it works](#how-it-works)
+- [Architecture](#architecture)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [API overview](#api-overview)
+- [Project structure](#project-structure)
+- [Testing and CI](#testing-and-ci)
+- [Deployment](#deployment)
+- [QA environment](#qa-environment)
 
-## Installation
+## How it works
 
-1. Clone the repository:
+A user submits a **hồ sơ** (notarization request) with the required documents. A notary reviews it, uploads the notarized output, and both sides sign. After payment, the output is stored and minted as an NFT that appears in the user's document wallet. Multi-party **sessions** follow the same path with several signers.
 
-   ```bash
-   git clone https://github.com/sloweyyy/Trustify-Backend
-   cd Trustify-Backend
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   yarn
-   ```
-
-3. Set up environment variables:
-
-   Copy the `.env.example` file to `.env` and update the values as needed.
-
-   ```bash
-   cp .env.example .env
-   ```
-
-4. Start the server:
-
-   ```bash
-   yarn start
-   ```
-
-## Environment Variables
-
-```bash
-# Port number
-PORT=3000
-HOST=http://localhost
-
-# URL of the Mongo DB
-MONGODB_URL=mongodb://127.0.0.1:27017/trustify
-
-# JWT
-# JWT secret key
-JWT_SECRET=thisisasamplesecret
-# Number of minutes after which an access token expires
-JWT_ACCESS_EXPIRATION_MINUTES=30
-# Number of days after which a refresh token expires
-JWT_REFRESH_EXPIRATION_DAYS=30
-# Number of minutes after which a reset password token expires
-JWT_RESET_PASSWORD_EXPIRATION_MINUTES=10
-# Number of minutes after which a verify email token expires
-JWT_VERIFY_EMAIL_EXPIRATION_MINUTES=10
-
-# SMTP configuration options for the email service
-# For testing, you can use a fake SMTP service like Ethereal: https://ethereal.email/create
-SMTP_HOST=email-server
-SMTP_PORT=587
-SMTP_USERNAME=email-server-username
-SMTP_PASSWORD=email-server-password
-EMAIL_FROM=support@yourapp.com
-
-# Google OAuth configuration
-GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID
-GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET
-GOOGLE_CALLBACK_URL=YOUR_GOOGLE_CALLBACK_URL
-
-# GEMINI API key
-GEMINI_API_KEY=YOUR_GEMINI_API_KEY
-
-# Firebase configuration
-FIREBASE_TYPE=YOUR_FIREBASE_TYPE
-FIREBASE_PROJECT_ID=YOUR_FIREBASE_PROJECT_ID
-FIREBASE_STORAGE_BUCKET=YOUR_FIREBASE_STORAGE_BUCKET
-FIREBASE_PRIVATE_KEY_ID=YOUR_FIREBASE_PRIVATE_KEY_ID
-FIREBASE_PRIVATE_KEY=YOUR_FIREBASE_PRIVATE_KEY
-FIREBASE_CLIENT_EMAIL=YOUR_FIREBASE_CLIENT_EMAIL
-FIREBASE_CLIENT_ID=YOUR_FIREBASE_CLIENT_ID
-FIREBASE_AUTH_URI=YOUR_FIREBASE_AUTH_URI
-FIREBASE_TOKEN_URI=YOUR_FIREBASE_TOKEN_URI
-FIREBASE_AUTH_PROVIDER_X509_CERT_URL=YOUR_FIREBASE_AUTH_PROVIDER_X509_CERT_URL
-FIREBASE_CLIENT_X509_CERT_URL=YOUR_FIREBASE_CLIENT_X509_CERT_URL
-FIREBASE_UNIVERSE_DOMAIN=YOUR_FIREBASE_UNIVERSE_DOMAIN
-FIREBASE_DATABASE_URL=YOUR_FIREBASE_DATABASE_URL
-
-# Client URL
-CLIENT_URL=YOUR_CLIENT_URL
-
-# Payment URL
-PAYOS_CLIENT_ID=YOUR_PAYOS_CLIENT_ID
-PAYOS_API_KEY=YOUR_PAYOS_API_KEY
-PAYOS_CHECKSUM_KEY=YOUR_PAYOS_CHECKSUM_KEY
-SERVER_URL=YOUR_SERVER_URL
-VIETQR_URL=YOUR_VIETQR_URL
-
-# Docker
-DOCKER_USERNAME=YOUR_DOCKER_USERNAME
-DOCKER_PASSWORD=YOUR_DOCKER_PASSWORD
-
-# Solana
-SOLANA_CLUSTER_URL=https://api.devnet.solana.com
-WALLET_PRIVATE_KEY=YOUR_BASE64_ENCODED_WALLET_PRIVATE_KEY
-PROGRAM_ID=YOUR_SOLANA_PROGRAM_ID
-
-# IPFS/Pinata
-PINATA_API_KEY=YOUR_PINATA_API_KEY
-PINATA_SECRET_KEY=YOUR_PINATA_SECRET_KEY
-
-# Bundlr
-BUNDLR_NODE=https://devnet.bundlr.network
-BUNDLR_CURRENCY=solana
-
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> pending: User uploads hồ sơ
+    pending --> processing: Notary accepts
+    processing --> digitalSignature: Notary uploads output
+    digitalSignature --> completed: User and notary sign
+    pending --> rejected
+    processing --> rejected
+    completed --> [*]: Payment, then NFT minted to the wallet
 ```
 
-## QA Environment
-
-| | URL |
+| Status | Label in the app |
 |---|---|
-| Web app | https://trustify-notary.vercel.app |
-| API | https://trustify-api-ar4i.onrender.com (Swagger: `/v1/docs`, health: `/health`) |
+| `pending` | Chờ xử lý |
+| `processing` | Đang xử lý |
+| `digitalSignature` | Chờ ký số |
+| `completed` | Hoàn tất |
+| `rejected` | Bị từ chối |
 
-QA accounts (created by `yarn seed`, password `Trustify@123`):
+## Architecture
 
-| Role | Email |
+```mermaid
+flowchart LR
+    Web["Web app<br/>React · Vercel"] -->|REST /v1| API["Trustify API<br/>Express · Render"]
+    API --> DB[("MongoDB Atlas")]
+    API --> Files[("File storage<br/>Supabase · Firebase · local")]
+    API --> Chain["Solana devnet<br/>Metaplex NFTs"]
+    API --> Pay["PayOS"]
+    API --> AI["Gemini<br/>chat assistant"]
+    API --> Auth["Google OAuth"]
+    API --> Mail["SMTP"]
+```
+
+Every external service is **optional**. Without its keys the API falls back safely, so it runs locally with only MongoDB:
+
+| Missing | Fallback |
 |---|---|
-| Admin | `trustify.admin@example.com` |
-| Notary | `trustify.notary@example.com` |
-| User | `trustify.user@example.com`, `trustify.user2@example.com` |
-
-The API runs on Render's free plan and sleeps after 15 minutes idle; the first request after that takes about a minute.
-
-## Deployment
-
-All services run on free tiers:
-
-| Piece | Service | Notes |
-|---|---|---|
-| API | Render web service (`render.yaml`) | Node 20, `node src/index.js`, health check `/health` |
-| Database | MongoDB Atlas M0 | Network access `0.0.0.0/0` because Render free has no static IPs |
-| Files | Supabase Storage | Public bucket `trustify`; set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
-| Web app | Vercel (`Trustify-Frontend/vercel.json`) | Set `REACT_APP_API_BASE_URL` to `<api>/v1` |
-| NFTs | Solana devnet | `WALLET_PRIVATE_KEY` = base64 secret key with devnet SOL |
-
-Every integration is optional, so the API also starts with only `MONGODB_URL` and `JWT_SECRET`:
-
-| Missing | Behaviour |
-|---|---|
-| PayOS keys (or `PAYMENT_MODE=mock`) | Checkout is simulated as paid |
-| Supabase / Firebase | Files are written to `./uploads` (lost on Render restarts) |
+| PayOS keys, or `PAYMENT_MODE=mock` | Checkout is simulated as paid, so the full flow still runs |
+| Supabase / Firebase | Files are saved to `./uploads` and served at `/uploads` |
 | Pinata | NFT metadata is stored in file storage |
-| SMTP | Emails are logged instead of sent |
-| Google OAuth / Gemini | `/v1/auth/google` and `/v1/chatbot` return 503 |
+| SMTP | Emails are written to the log instead of sent |
+| Google OAuth / Gemini | `/v1/auth/google` and `/v1/chatbot` return `503` |
+| `WALLET_PRIVATE_KEY` | A throwaway keypair is generated; minting fails without devnet SOL |
 
-After deploying, seed and run the end-to-end check (needs `PAYMENT_MODE=mock` for the automatic payment step):
+## Quick start
+
+**Requirements:** Node.js 20, and Docker (or any MongoDB).
 
 ```bash
-MONGODB_URL=<atlas-url> yarn seed
-API_URL=https://<api>/v1 node scripts/smoke-e2e.js
+git clone https://github.com/sloweyyy/Trustify-Backend.git
+cd Trustify-Backend
+yarn install
+
+docker run -d --name trustify-mongo -p 27017:27017 mongo:6
+cp .env.example .env          # minimal: NODE_ENV, PORT, MONGODB_URL, JWT_SECRET
+
+yarn seed                     # notarization catalog + QA accounts
+yarn dev                      # http://localhost:3000 (Swagger at /v1/docs in development)
 ```
 
-## API Documentation
+Check the whole flow end to end: upload → review → sign → pay → mint NFT.
 
-The API documentation can be accessed at `/v1/docs`. You can view the list of available APIs and their specifications by running the server and visiting `http://localhost:3000/v1/docs` in your browser.
+```bash
+PAYMENT_MODE=mock yarn dev
+API_URL=http://localhost:3000/v1 node scripts/smoke-e2e.js
+```
 
-## Testing
+> Running the web app locally too? It also defaults to port 3000, so start the API with `PORT=3100` and point the frontend at `http://localhost:3100/v1`.
 
-Run tests with:
+| Command | What it does |
+|---|---|
+| `yarn dev` | Start with nodemon (development mode; Swagger enabled) |
+| `yarn start:prod` | Start with plain Node (used in production) |
+| `yarn test` | Jest unit and integration tests (needs MongoDB) |
+| `yarn lint` | ESLint |
+| `yarn seed` | Upsert 10 fields, 45 services and 4 QA accounts (safe to re-run) |
+| `node scripts/smoke-e2e.js` | End-to-end API check, including a devnet NFT mint |
+| `node scripts/get-balance.js` | Devnet wallet balance |
+
+## Configuration
+
+Copy `.env.example`; every variable is documented there. The important groups:
+
+| Variable | Required | Notes |
+|---|---|---|
+| `MONGODB_URL`, `JWT_SECRET` | ✅ | The only hard requirements |
+| `CLIENT_URL`, `SERVER_URL` | Production | Used for redirects, email links and local file URLs |
+| `STORAGE_DRIVER`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_BUCKET` | Optional | `supabase`, `firebase` or `local`; auto-detected from keys |
+| `SOLANA_CLUSTER_URL`, `WALLET_PRIVATE_KEY` | Optional | Base64 secret key of a wallet with devnet SOL |
+| `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY`, `PAYMENT_MODE` | Optional | Real PayOS checkout, or `mock` |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | Optional | Chat assistant (default model `gemini-3.5-flash`) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` | Optional | "Sign in with Google" |
+| `SMTP_*`, `EMAIL_FROM` | Optional | Transactional email |
+| `PINATA_API_KEY`, `PINATA_SECRET_KEY` | Optional | Store NFT metadata on IPFS |
+
+## API overview
+
+All routes are under `/v1`. Swagger UI is served at `/v1/docs` in development only. Health check: `GET /health`.
+
+| Prefix | Purpose |
+|---|---|
+| `/auth` | Register, login, refresh, password reset, email verification, Google OAuth |
+| `/users` | User accounts and profile |
+| `/notarization-fields`, `/notarization-services` | Notarization catalog (fields, services, required documents, prices) |
+| `/notarization` | Hồ sơ upload, status, notary review, digital signatures |
+| `/session` | Multi-party notarization sessions |
+| `/payments` | PayOS checkout, callback, a user's own payments |
+| `/userWallet`, `/nft` | Document wallet, NFT transfer and purchase, on-chain metadata |
+| `/notary`, `/admin/metrics` | Notary and admin dashboards |
+| `/chatbot` | Gemini-powered assistant (Vietnamese notarization FAQ) |
+| `/role`, `/email` | Roles and email helpers |
+
+Roles: `user`, `notary`, `admin` (see `src/config/roles.js`).
+
+## Project structure
+
+```
+src/
+├── index.js / app.js     # Server bootstrap, middleware, /health, /uploads
+├── config/               # env, passport, roles, storage drivers, PayOS, Solana, Firebase
+├── routes/v1/            # Express routers with Swagger annotations
+├── controllers/          # HTTP layer
+├── services/             # Business logic (notarization, session, payment, wallet, cron…)
+├── models/               # Mongoose schemas
+├── middlewares/          # auth, validation, rate limiting, error handling
+├── validations/          # Joi schemas
+└── seed/catalog.json     # 10 fields / 45 services from the business requirements
+scripts/                  # seed, end-to-end smoke test, devnet wallet tools
+tests/                    # Jest unit + integration tests
+```
+
+## Testing and CI
 
 ```bash
 yarn test
 ```
 
-For coverage reports:
+GitHub Actions (`.github/workflows/ci.yml`) runs the full suite against a MongoDB service on every push and PR. GitGuardian scans every PR for secrets.
+
+## Deployment
+
+The QA stack runs entirely on free tiers:
+
+| Piece | Service | Notes |
+|---|---|---|
+| API | Render web service (`render.yaml`) | Node 20, `node src/index.js`, health check `/health`, auto-deploys from `main` |
+| Database | MongoDB Atlas M0 | Network access `0.0.0.0/0`, because Render's free tier has no static IPs |
+| Files | Supabase Storage | Public bucket `trustify` |
+| Web app | Vercel | See the [frontend repo](https://github.com/sloweyyy/Trustify-Frontend) |
+| NFTs | Solana devnet | Wallet funded with devnet SOL |
+
+After deploying, seed the database once:
 
 ```bash
-yarn test --coverage
+MONGODB_URL=<atlas-url> yarn seed
 ```
 
-## Docker
+A `Dockerfile` (Node 20 Alpine) is included for container hosts.
 
-If you want to run the application using Docker, you can use the following commands:
+## QA environment
 
-```bash
-# Run the Docker container in development mode
-yarn docker:dev
-# Run the Docker container in production mode
-yarn docker:prod
-```
+| | |
+|---|---|
+| Web app | https://trustify-notary.vercel.app |
+| API | https://trustify-api-ar4i.onrender.com (sleeps after 15 minutes idle; the first request takes about a minute) |
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | `trustify.admin@example.com` | `Trustify@123` |
+| Notary | `trustify.notary@example.com` | `Trustify@123` |
+| User | `trustify.user@example.com`, `trustify.user2@example.com` | `Trustify@123` |
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+[MIT](LICENSE) © Phuc Truong Le Vinh
