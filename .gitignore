@@ -19,3 +19,6 @@ DS_Store
 
 # Local storage driver files
 uploads/
+
+# Private document storage (local driver)
+storage-private/

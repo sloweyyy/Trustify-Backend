@@ -17,7 +17,7 @@ const { userService, notarizationService } = require('.');
 const emailService = require('./email.service');
 const { payOS } = require('../config/payos');
 const { uploadFile, downloadFile } = require('../config/storage');
-const { uploadToIPFS, mintDocumentNFT, getTransactionData, isNotarizedAssetUrl } = require('../config/blockchain');
+const { publishDocumentRecord, mintDocumentNFT, getTransactionData, isNotarizedAssetUrl } = require('../config/blockchain');
 const userWalletService = require('./userWallet.service');
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -550,7 +550,7 @@ const uploadSessionDocument = async (sessionId, documentBody, files, fileIds, cu
         _id: item._id,
         userId,
         filename: customFileNames && customFileNames[index] ? customFileNames[index] : item.filename,
-        firebaseUrl: item.tokenURI,
+        firebaseUrl: item.fileUrl || item.tokenURI,
         createdAt: Date.now(),
       }));
 
@@ -1145,8 +1145,8 @@ const mintNFTs = async (orderCode) => {
       for (const outputFile of session.output) {
         // Download file from storage
         const fileBuffer = await downloadFile(outputFile.firebaseUrl);
-        // Upload to Arweave via uploadToIPFS function (which now uses Arweave)
-        const metadataUrl = await uploadToIPFS(fileBuffer, outputFile.filename);
+        // Publish the public fingerprint record; the file itself stays private
+        const { metadataUri: metadataUrl, sha256: fileHash } = await publishDocumentRecord(fileBuffer);
 
         // Mint NFT
         const nftData = await mintDocumentNFT(metadataUrl);
@@ -1177,8 +1177,9 @@ const mintNFTs = async (orderCode) => {
         // Store metadata URI
         outputFile.metadataUri = metadataUrl;
 
-        // Set minted timestamp
+        // Set minted timestamp and fingerprint
         outputFile.mintedAt = new Date();
+        outputFile.sha256 = fileHash;
 
         // Add NFT to wallet of everyone in session
         for (const user of session.users) {
@@ -1192,6 +1193,8 @@ const mintNFTs = async (orderCode) => {
             explorerLink: nftData.viewLinks && nftData.viewLinks.explorerLink,
             solscanLink: nftData.viewLinks && nftData.viewLinks.solscanLink,
             ipfsLink: nftData.viewLinks && nftData.viewLinks.ipfsLink,
+            fileUrl: outputFile.firebaseUrl,
+            sha256: fileHash,
             amount: session.amount || 1,
           });
         }
@@ -1208,6 +1211,8 @@ const mintNFTs = async (orderCode) => {
           metadataUri: metadataUrl, // Add explicit metadataUri field
           metadataAddress: nftData.metadataAddress,
           transactionSignature: nftData.transactionSignature,
+          fileUrl: outputFile.firebaseUrl,
+          sha256: fileHash,
         });
       }
 

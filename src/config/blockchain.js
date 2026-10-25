@@ -7,7 +7,6 @@ const { keypairIdentity: umiKeypairIdentity } = require('@metaplex-foundation/um
 const { fromWeb3JsKeypair } = require('@metaplex-foundation/umi-web3js-adapters');
 const { Wallet } = require('@project-serum/anchor');
 const PinataSDK = require('@pinata/sdk');
-const { Readable } = require('stream');
 
 const solanaClusterUrl = process.env.SOLANA_CLUSTER_URL || 'https://api.devnet.solana.com';
 const connection = new Connection(solanaClusterUrl, 'confirmed');
@@ -77,79 +76,75 @@ const getViewLinks = (mintAddress, metadataUri) => {
 const pinataEnabled = Boolean(process.env.PINATA_API_KEY && process.env.PINATA_SECRET_KEY);
 const pinata = pinataEnabled ? new PinataSDK(process.env.PINATA_API_KEY, process.env.PINATA_SECRET_KEY) : null;
 
-// URLs produced by uploadToIPFS: Pinata gateway, or app storage when Pinata is not configured.
 const METADATA_FOLDER = 'nft-metadata';
-const isNotarizedAssetUrl = (url) => Boolean(url) && (url.includes('/ipfs/') || url.includes(`/${METADATA_FOLDER}/`));
+const HASH_ALGORITHM = 'SHA-256';
 
-// Without Pinata, keep the file and its metadata JSON in regular storage.
-const uploadToStorage = async (fileBuffer, fileName) => {
-  // Lazy require: storage pulls in firebase/logger, which this module must not depend on at load time.
-  // eslint-disable-next-line global-require
-  const { uploadFile } = require('./storage');
-  const prefix = `${METADATA_FOLDER}/${Date.now()}`;
-  const fileUrl = await uploadFile(`${prefix}/${fileName}`, fileBuffer);
-  const metadataJson = {
-    name: fileName.slice(0, 32),
-    description: `Document: ${fileName}`,
-    image: '',
-    properties: { files: [{ type: 'application/octet-stream', name: fileName, uri: fileUrl }] },
-  };
-  return uploadFile(`${prefix}/metadata.json`, Buffer.from(JSON.stringify(metadataJson)), 'application/json');
+// Files reused from a document wallet: legacy metadata links, or a notarized output in private storage.
+const isNotarizedAssetUrl = (url) =>
+  Boolean(url) && (url.includes('/ipfs/') || url.includes(`/${METADATA_FOLDER}/`) || url.startsWith('storage://outputs/'));
+
+/**
+ * Public NFT metadata for a notarized document. It carries a SHA-256 fingerprint
+ * of the file and nothing personal: no file, file name or link to the file, which
+ * stays in private storage. Anyone holding the file can check it against this record.
+ */
+const buildDocumentMetadata = (fileHash, notarizedAt = new Date()) => ({
+  name: 'Trustify Notarized Doc',
+  symbol: 'DOC',
+  description:
+    'Bản ghi công chứng Trustify. Tài liệu được lưu riêng tư; đối chiếu bằng cách so mã băm SHA-256 của tệp với bản ghi này.',
+  attributes: [
+    { trait_type: 'issuer', value: 'Trustify' },
+    { trait_type: 'hash_algorithm', value: HASH_ALGORITHM },
+    { trait_type: 'sha256', value: fileHash },
+    { trait_type: 'notarized_at', value: notarizedAt.toISOString() },
+  ],
+  properties: {
+    issuer: 'Trustify',
+    hashAlgorithm: HASH_ALGORITHM,
+    sha256: fileHash,
+    notarizedAt: notarizedAt.toISOString(),
+  },
+});
+
+/** Read the recorded fingerprint from metadata, or null for legacy records without one. */
+const getRecordedHash = (metadata) => {
+  if (!metadata || typeof metadata !== 'object') return null;
+  const fromProperties = metadata.properties && metadata.properties.sha256;
+  const fromAttributes = Array.isArray(metadata.attributes)
+    ? (metadata.attributes.find((attribute) => attribute.trait_type === 'sha256') || {}).value
+    : null;
+  const hash = fromProperties || fromAttributes;
+  return typeof hash === 'string' && /^[a-f0-9]{64}$/i.test(hash) ? hash.toLowerCase() : null;
 };
 
-const uploadToIPFS = async (fileBuffer, fileName) => {
-  if (!pinataEnabled) {
-    return uploadToStorage(fileBuffer, fileName);
-  }
-  try {
-    console.log(`Uploading file to IPFS: ${fileName}`);
+/**
+ * Publish the public record for a notarized file and return its metadata URI:
+ * pinned to IPFS when Pinata is configured, otherwise stored in public file storage.
+ * Returns { metadataUri, sha256 }.
+ */
+const publishDocumentRecord = async (fileBuffer, { notarizedAt = new Date() } = {}) => {
+  // Lazy require: storage pulls in firebase/logger, which this module must not depend on at load time.
+  // eslint-disable-next-line global-require
+  const { uploadFile, sha256 } = require('./storage');
+  const fileHash = sha256(fileBuffer);
+  const metadata = buildDocumentMetadata(fileHash, notarizedAt);
 
-    const metadataJson = {
-      name: fileName,
-      description: `Document: ${fileName}`,
-      image: '',
-      properties: {
-        files: [
-          {
-            type: 'application/octet-stream',
-            name: fileName,
-          },
-        ],
-      },
-    };
-
-    const fileStream = Readable.from(fileBuffer);
-
-    const fileResult = await pinata.pinFileToIPFS(fileStream, {
-      pinataMetadata: {
-        name: fileName,
-      },
-      pinataOptions: {
-        cidVersion: 0,
-      },
+  if (pinataEnabled) {
+    const result = await pinata.pinJSONToIPFS(metadata, {
+      pinataMetadata: { name: `trustify-record-${fileHash.slice(0, 16)}` },
+      pinataOptions: { cidVersion: 0 },
     });
-
-    console.log(`File uploaded to IPFS with CID: ${fileResult.IpfsHash}`);
-
-    const fileUrl = `https://gateway.pinata.cloud/ipfs/${fileResult.IpfsHash}`;
-    metadataJson.properties.files[0].uri = fileUrl;
-
-    const metadataResult = await pinata.pinJSONToIPFS(metadataJson, {
-      pinataMetadata: {
-        name: `${fileName}-metadata`,
-      },
-      pinataOptions: {
-        cidVersion: 0,
-      },
-    });
-
-    console.log(`Metadata uploaded to IPFS with CID: ${metadataResult.IpfsHash}`);
-
-    return `https://gateway.pinata.cloud/ipfs/${metadataResult.IpfsHash}`;
-  } catch (error) {
-    console.error('Error uploading to IPFS via Pinata:', error);
-    throw error;
+    return { metadataUri: `https://gateway.pinata.cloud/ipfs/${result.IpfsHash}`, sha256: fileHash };
   }
+
+  const metadataUri = await uploadFile(
+    `${METADATA_FOLDER}/${Date.now()}-${fileHash.slice(0, 16)}/metadata.json`,
+    Buffer.from(JSON.stringify(metadata)),
+    'application/json',
+    { visibility: 'public' }
+  );
+  return { metadataUri, sha256: fileHash };
 };
 
 const mintDocumentNFT = async (metadataUri) => {
@@ -321,11 +316,13 @@ module.exports = {
   connection,
   wallet,
   umi,
-  uploadToIPFS,
   mintDocumentNFT,
   getTransactionData,
   pinata,
   isNotarizedAssetUrl,
+  buildDocumentMetadata,
+  getRecordedHash,
+  publishDocumentRecord,
   getViewLinks,
   extractIPFSCid,
   getMetadataByMint,

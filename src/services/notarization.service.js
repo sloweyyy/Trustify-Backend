@@ -10,7 +10,7 @@ const { uploadFile, downloadFile } = require('../config/storage');
 const RequestSignature = require('../models/requestSignature.model');
 const { payOS } = require('../config/payos');
 const Payment = require('../models/payment.model');
-const { uploadToIPFS, mintDocumentNFT, getViewLinks, isNotarizedAssetUrl } = require('../config/blockchain');
+const { publishDocumentRecord, mintDocumentNFT, getViewLinks, isNotarizedAssetUrl } = require('../config/blockchain');
 const userWalletService = require('./userWallet.service');
 
 const generateOrderCode = () => {
@@ -92,7 +92,7 @@ const createDocument = async (documentBody, files, fileIds, customFileNames, use
       const walletFiles = walletItems.map((item, index) => ({
         _id: item._id,
         filename: customFileNames && customFileNames[index] ? customFileNames[index] : item.filename,
-        firebaseUrl: item.metadataUri,
+        firebaseUrl: item.fileUrl || item.metadataUri,
       }));
 
       await userWalletService.decreaseNFTAmount(userId, fileIds);
@@ -756,10 +756,10 @@ const mintNFTs = async (orderCode) => {
           if (!fileBuffer) {
             throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to download file');
           }
-          // Upload to IPFS
-          const ipfsUrl = await uploadToIPFS(fileBuffer, outputFile.filename);
+          // Publish the public fingerprint record; the file itself stays private
+          const { metadataUri: ipfsUrl, sha256: fileHash } = await publishDocumentRecord(fileBuffer);
           if (!ipfsUrl) {
-            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to upload to IPFS');
+            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to publish document record');
           }
           // Mint NFT
           const nftData = await mintDocumentNFT(ipfsUrl);
@@ -775,6 +775,7 @@ const mintNFTs = async (orderCode) => {
             outputFile.viewLinks = getViewLinks(outputFile.mintAddress, ipfsUrl);
           }
           outputFile.mintedAt = new Date();
+          outputFile.sha256 = fileHash;
           console.log('Adding NFT to wallet with data:', {
             filename: outputFile.filename,
             amount: document.amount,
@@ -794,6 +795,8 @@ const mintNFTs = async (orderCode) => {
             explorerLink: nftData.viewLinks && nftData.viewLinks.explorerLink,
             solscanLink: nftData.viewLinks && nftData.viewLinks.solscanLink,
             ipfsLink: nftData.viewLinks && nftData.viewLinks.ipfsLink,
+            fileUrl: outputFile.firebaseUrl,
+            sha256: fileHash,
             amount: document.amount || 1,
           });
           outputFile.metadataUri = ipfsUrl;
