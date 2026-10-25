@@ -1,28 +1,13 @@
 const express = require('express');
-const multer = require('multer');
-const httpStatus = require('http-status');
 const auth = require('../../middlewares/auth');
 const validate = require('../../middlewares/validate');
 const sessionValidation = require('../../validations/session.validation');
 const sessionController = require('../../controllers/session.controller');
-const ApiError = require('../../utils/ApiError');
 const parseJson = require('../../middlewares/parseJson');
 
-const router = express.Router();
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // Limit file size to 5MB
-  fileFilter: (req, file, cb) => {
-    const allowedFileTypes = /jpeg|jpg|png|pdf/;
-    const mimeType = allowedFileTypes.test(file.mimetype);
-    const extname = allowedFileTypes.test(file.originalname.split('.').pop());
+const { upload } = require('../../middlewares/upload');
 
-    if (mimeType && extname) {
-      return cb(null, true);
-    }
-    cb(new ApiError(httpStatus.BAD_REQUEST, 'Only images and PDFs are allowed'));
-  },
-});
+const router = express.Router();
 
 /**
  * @swagger
